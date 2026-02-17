@@ -1,4 +1,4 @@
-# 🚀 MiniShop — Event-Driven Distributed System (Production-Grade Case)
+## 🚀 MiniShop — Event-Driven Distributed System (Production-Grade Case)
 
 Case profissional de engenharia distribuída com Kafka, Outbox Pattern, Observabilidade completa, Kubernetes manifests e integração com AI tooling (MCP).
 
@@ -39,7 +39,8 @@ Este projeto simula decisões reais de arquitetura adotadas em produção.
 
 ---
 
-🧠 Visão geral da arquitetura
+##🧠 Visão geral da arquitetura
+```ts
 Client
   ↓
 API (REST)
@@ -53,14 +54,14 @@ Worker Consumer
 Processamento idempotente
   ↓
 Redis + PostgreSQL
-
+```
 Observabilidade:
-
+```ts
 Prometheus ← metrics
 Grafana ← dashboards
 Jaeger ← traces
 MCP server ← AI diagnostics
-
+```
 ---
 
 ## 1️⃣ Estrutura final do repositório
@@ -104,36 +105,22 @@ minishop/
 ---
 
 ## ⚙️ Componentes principais
+
 API
-
 REST endpoints
-
 grava pedidos no DB
-
 grava eventos no outbox
-
 NÃO publica Kafka diretamente
-
 correlação e idempotência
-
 Worker
-
 Kafka consumer
-
 idempotência garantida
-
 retry + DLQ
-
 métricas de processamento
-
 Outbox Worker
-
 polling do banco
-
 publica eventos no Kafka
-
 garante consistência transacional
-
 métricas específicas do outbox
 
 ---
@@ -141,17 +128,12 @@ métricas específicas do outbox
 ## 📦 Outbox Pattern
 
 A API grava:
-
 pedido
-
 evento
-
 transaction commit
-
 O outbox-worker publica depois.
 
 Benefícios:
-
 ✅ consistência garantida
 ✅ zero perda de evento
 ✅ reprocessamento seguro
@@ -162,20 +144,20 @@ Benefícios:
 ## 🔄 DLQ + Reprocessamento
 
 Eventos que falham vão para:
-
+```ts
 orders.created.dlq
-
-
+```
 A API possui endpoint administrativo:
-
+```ts
 POST /admin/dlq/reprocess
-
+```
 
 Permite replay manual controlado.
 
 ---
 
 ## 📊 Observabilidade
+
 Métricas Prometheus
 
 throughput de eventos
@@ -197,12 +179,12 @@ Outbox Worker:  :9200/metrics
 ```
 ---
 
-### Grafana Dashboard
+## Grafana Dashboard
 
 Dashboards versionados em:
-
+```ts
 infra/grafana/dashboards/
-
+```
 
 Inclui:
 
@@ -219,13 +201,14 @@ latência
 ## Tracing distribuído
 
 OpenTelemetry + Jaeger
-
+```ts
 http://localhost:16686
-
+```
 Rastreia:
-
+```ts
 HTTP → Kafka → Worker → DB
-  
+```
+
 ---
 
 ## 🤖 MCP (AI Tooling)
@@ -245,8 +228,9 @@ Exemplo:
 AI pode diagnosticar falhas automaticamente.
 
 Diretório:
+```ts
 /mcp
-
+```
 ---
 
 ## 🧪 Testes
@@ -255,7 +239,6 @@ unitários
 
 integração
 
-e2e (Cypress / Vitest)
 ---
 
 ## 🛠️ Stack
@@ -314,11 +297,14 @@ pnpm -C mcp dev
 ## ☸️ Kubernetes
 
 Manifests prontos em:
+```ts
 /k8s
+```
 
 Deploy:
+```ts
 kubectl apply -k k8s/
-
+```
 ---
 
 ---

@@ -6,14 +6,9 @@ on:
   pull_request:
     branches: [main]
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   lint-and-test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
@@ -25,16 +20,19 @@ jobs:
           node-version: 20
           cache: "pnpm"
 
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10
 
-      - name: Install dependencies
+      - name: Install deps
         run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: pnpm lint
+        run: pnpm -r lint
 
       - name: Test
-        run: pnpm test
+        run: pnpm -r test

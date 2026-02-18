@@ -1,20 +1,24 @@
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
-import { OutboxRepository } from "./outbox.repository";
-import { KafkaProducer } from "../messaging/kafka.producer";
-import { MetricsService } from "../metrics/metrics.service";
-import { trace, SpanStatusCode } from "@opentelemetry/api";
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { OutboxRepository } from './outbox.repository';
+import { KafkaProducer } from '../messaging/kafka.producer';
+import { MetricsService } from '../metrics/metrics.service';
+import { trace, SpanStatusCode } from '@opentelemetry/api';
 
-const tracer = trace.getTracer("minishop-api");
+const tracer = trace.getTracer('minishop-api');
 
 @Injectable()
 export class OutboxPublisher implements OnModuleInit {
   private readonly logger = new Logger(OutboxPublisher.name);
 
-  private readonly intervalMs = Number(process.env.OUTBOX_PUBLISH_INTERVAL_MS ?? 1000);
+  private readonly intervalMs = Number(
+    process.env.OUTBOX_PUBLISH_INTERVAL_MS ?? 1000,
+  );
   private readonly batchSize = Number(process.env.OUTBOX_BATCH_SIZE ?? 20);
   private readonly lockTtlSec = Number(process.env.OUTBOX_LOCK_TTL_SEC ?? 30);
-  private readonly lockerId = process.env.OUTBOX_LOCKER_ID ?? "api-local";
-  private readonly baseBackoffMs = Number(process.env.OUTBOX_BASE_BACKOFF_MS ?? 500);
+  private readonly lockerId = process.env.OUTBOX_LOCKER_ID ?? 'api-local';
+  private readonly baseBackoffMs = Number(
+    process.env.OUTBOX_BASE_BACKOFF_MS ?? 500,
+  );
 
   constructor(
     private readonly repo: OutboxRepository,
@@ -27,12 +31,16 @@ export class OutboxPublisher implements OnModuleInit {
   }
 
   private async tick() {
-    const events = await this.repo.claimBatch(this.batchSize, this.lockerId, this.lockTtlSec);
+    const events = await this.repo.claimBatch(
+      this.batchSize,
+      this.lockerId,
+      this.lockTtlSec,
+    );
     if (!events.length) return;
 
     for (const evt of events) {
       await tracer.startActiveSpan(
-        "outbox.publish",
+        'outbox.publish',
         {
           attributes: {
             outboxId: evt.id,
@@ -49,14 +57,20 @@ export class OutboxPublisher implements OnModuleInit {
           try {
             // se excedeu max_attempts => dead
             if (evt.attempts >= evt.max_attempts) {
-              await this.repo.markDead(evt.id, "max_attempts_reached");
+              await this.repo.markDead(evt.id, 'max_attempts_reached');
               this.metrics.dlqTotal.inc(); // reaproveitando contador (ou crie outbox_dead_total)
-              span.setStatus({ code: SpanStatusCode.ERROR, message: "max_attempts_reached" });
+              span.setStatus({
+                code: SpanStatusCode.ERROR,
+                message: 'max_attempts_reached',
+              });
               span.end();
               return;
             }
 
-            const payload = typeof evt.payload === "string" ? JSON.parse(evt.payload) : evt.payload;
+            const payload =
+              typeof evt.payload === 'string'
+                ? JSON.parse(evt.payload)
+                : evt.payload;
 
             await this.producer.send(evt.topic, evt.payload, {
               correlationId: evt.correlation_id,

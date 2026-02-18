@@ -1,6 +1,11 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
-import type { Producer } from "kafkajs";
-import { KafkaClient } from "../messaging/kafka.client";
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
+import type { Producer } from 'kafkajs';
+import { KafkaClient } from '../messaging/kafka.client';
 
 @Injectable()
 export class KafkaProducer implements OnModuleInit, OnModuleDestroy {
@@ -12,7 +17,7 @@ export class KafkaProducer implements OnModuleInit, OnModuleDestroy {
   async onModuleInit() {
     this.producer = this.kafka.producer();
     await this.producer.connect();
-    this.logger.log("Producer connected");
+    this.logger.log('Producer connected');
   }
 
   async onModuleDestroy() {
@@ -34,9 +39,9 @@ export class KafkaProducer implements OnModuleInit, OnModuleDestroy {
         {
           value: JSON.stringify(payload),
           headers: {
-            "x-correlation-id": meta?.correlationId ?? "",
-            "x-idempotency-key": meta?.idempotencyKey ?? "",
-            "x-event-type": meta?.eventType ?? "",
+            'x-correlation-id': meta?.correlationId ?? '',
+            'x-idempotency-key': meta?.idempotencyKey ?? '',
+            'x-event-type': meta?.eventType ?? '',
           },
         },
       ],

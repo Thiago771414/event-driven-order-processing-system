@@ -3,8 +3,8 @@ import {
   ExecutionContext,
   Injectable,
   UnauthorizedException,
-} from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
@@ -13,15 +13,15 @@ export class AdminGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest();
 
-    const headerKey = req.headers["x-admin-key"];
-    const expectedKey = this.config.get<string>("ADMIN_API_KEY");
+    const headerKey = req.headers['x-admin-key'];
+    const expectedKey = this.config.get<string>('ADMIN_API_KEY');
 
     if (!expectedKey) {
-      throw new Error("ADMIN_API_KEY not configured");
+      throw new Error('ADMIN_API_KEY not configured');
     }
 
     if (!headerKey || headerKey !== expectedKey) {
-      throw new UnauthorizedException("Invalid admin key");
+      throw new UnauthorizedException('Invalid admin key');
     }
 
     return true;

@@ -1,6 +1,6 @@
 // apps/outbox-worker/src/outbox/outbox.repository.ts
-import { Injectable } from "@nestjs/common";
-import { DbService } from "../db/db.service";
+import { Injectable } from '@nestjs/common';
+import { DbService } from '../db/db.service';
 
 export type OutboxEventRow = {
   id: string;
@@ -14,7 +14,7 @@ export type OutboxEventRow = {
 
 @Injectable()
 export class OutboxRepository {
-  constructor(private readonly db: DbService) { }
+  constructor(private readonly db: DbService) {}
 
   /**
    * Busca e "reserva" eventos pendentes usando lock otimista no banco.
@@ -114,5 +114,4 @@ export class OutboxRepository {
     const oldest = rows?.[0]?.oldest as string | null;
     return oldest ? new Date(oldest) : null;
   }
-
 }

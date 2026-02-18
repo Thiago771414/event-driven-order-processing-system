@@ -1,10 +1,10 @@
-import { ConflictException, Injectable } from "@nestjs/common";
-import { randomUUID } from "crypto";
-import { DbService } from "../db/db.service";
-import { MetricsService } from "../metrics/metrics.service";
-import { CreateOrderSchema } from "./dto";
-import { calcTotal } from "./orders.schema";
-import { OrdersCreatedEvent } from "./orders.events";
+import { ConflictException, Injectable } from '@nestjs/common';
+import { randomUUID } from 'crypto';
+import { DbService } from '../db/db.service';
+import { MetricsService } from '../metrics/metrics.service';
+import { CreateOrderSchema } from './dto';
+import { calcTotal } from './orders.schema';
+import { OrdersCreatedEvent } from './orders.events';
 
 @Injectable()
 export class OrdersService {
@@ -43,7 +43,7 @@ export class OrdersService {
 
     const event: OrdersCreatedEvent = {
       eventId: randomUUID(),
-      type: "orders.created.v1",
+      type: 'orders.created.v1',
       occurredAt: new Date().toISOString(),
       correlationId,
       idempotencyKey,
@@ -57,7 +57,7 @@ export class OrdersService {
 
     const client = await this.db.pool.connect();
     try {
-      await client.query("BEGIN");
+      await client.query('BEGIN');
 
       // ✅ 2) grava o pedido
       await client.query(
@@ -69,7 +69,7 @@ export class OrdersService {
           orderId,
           body.customerId,
           total,
-          "created",
+          'created',
           idempotencyKey,
           correlationId,
         ],
@@ -85,28 +85,28 @@ export class OrdersService {
         `,
         [
           outboxId,
-          "order",
+          'order',
           orderId,
-          event.type,            // "orders.created.v1"
-          "orders.created",      // topic lógico na outbox (ajuste se quiser usar TOPICS.ORDERS_CREATED)
+          event.type, // "orders.created.v1"
+          'orders.created', // topic lógico na outbox (ajuste se quiser usar TOPICS.ORDERS_CREATED)
           JSON.stringify(event),
           correlationId,
           idempotencyKey,
         ],
       );
 
-      await client.query("COMMIT");
+      await client.query('COMMIT');
 
       // ✅ métrica: pedido criado (agora = gravado com segurança + outbox)
       this.metrics.ordersCreated.inc();
 
-      return { orderId, status: "created", total };
+      return { orderId, status: 'created', total };
     } catch (e: any) {
-      await client.query("ROLLBACK");
+      await client.query('ROLLBACK');
 
       // ✅ Postgres unique_violation (idempotency_key unique)
-      if (e?.code === "23505") {
-        throw new ConflictException("Duplicate idempotency key");
+      if (e?.code === '23505') {
+        throw new ConflictException('Duplicate idempotency key');
       }
 
       throw e;

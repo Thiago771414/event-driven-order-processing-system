@@ -1,8 +1,8 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const OrdersCreatedEventSchema = z.object({
   eventId: z.string().min(1),
-  type: z.literal("orders.created.v1"),
+  type: z.literal('orders.created.v1'),
   occurredAt: z.string().min(1),
   correlationId: z.string().min(1),
   idempotencyKey: z.string().min(1),
@@ -23,19 +23,19 @@ export type OrdersCreatedEvent = z.infer<typeof OrdersCreatedEventSchema>;
 
 export const OrdersProcessedEventSchema = z.object({
   eventId: z.string().min(1),
-  type: z.literal("orders.processed.v1"),
+  type: z.literal('orders.processed.v1'),
   occurredAt: z.string().min(1),
   correlationId: z.string().min(1),
   idempotencyKey: z.string().min(1),
   data: z.object({
     orderId: z.string().min(1),
-    status: z.literal("processed"),
+    status: z.literal('processed'),
   }),
 });
 
 export const OrdersCreatedDlqEventSchema = z.object({
   eventId: z.string().min(1),
-  type: z.literal("orders.created.dlq.v1"),
+  type: z.literal('orders.created.dlq.v1'),
   occurredAt: z.string().min(1),
   correlationId: z.string().min(1),
   idempotencyKey: z.string().min(1),

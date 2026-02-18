@@ -1,7 +1,12 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
-import { OutboxRepository } from "./outbox.repository";
-import { KafkaProducer } from "../messaging/kafka.producer";
-import { MetricsService } from "../metrics/metrics.service";
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
+import { OutboxRepository } from './outbox.repository';
+import { KafkaProducer } from '../messaging/kafka.producer';
+import { MetricsService } from '../metrics/metrics.service';
 
 @Injectable()
 export class OutboxPublisher implements OnModuleInit, OnModuleDestroy {
@@ -12,12 +17,12 @@ export class OutboxPublisher implements OnModuleInit, OnModuleDestroy {
     private readonly repo: OutboxRepository,
     private readonly producer: KafkaProducer,
     private readonly metrics: MetricsService,
-  ) { }
+  ) {}
 
   onModuleInit() {
     // polling simples (ex: a cada 1s)
-    this.timer = setInterval(() => this.tick().catch(() => { }), 1000);
-    this.logger.log("[OUTBOX] Publisher started");
+    this.timer = setInterval(() => this.tick().catch(() => {}), 1000);
+    this.logger.log('[OUTBOX] Publisher started');
   }
 
   async onModuleDestroy() {

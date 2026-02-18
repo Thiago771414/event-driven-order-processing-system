@@ -1,5 +1,5 @@
-import { Injectable } from "@nestjs/common";
-import { DbService } from "../db/db.service";
+import { Injectable } from '@nestjs/common';
+import { DbService } from '../db/db.service';
 
 @Injectable()
 export class OutboxRepository {
@@ -8,7 +8,7 @@ export class OutboxRepository {
   async claimBatch(limit: number, lockerId: string, lockTtlSec: number) {
     const client = await this.db.pool.connect();
     try {
-      await client.query("BEGIN");
+      await client.query('BEGIN');
 
       // pega eventos prontos, ignora os já lockados por outro, e locka a linha
       const { rows } = await client.query(
@@ -29,7 +29,7 @@ export class OutboxRepository {
       );
 
       if (rows.length === 0) {
-        await client.query("COMMIT");
+        await client.query('COMMIT');
         return [];
       }
 
@@ -44,10 +44,10 @@ export class OutboxRepository {
         [ids, lockerId],
       );
 
-      await client.query("COMMIT");
+      await client.query('COMMIT');
       return rows;
     } catch (e) {
-      await client.query("ROLLBACK");
+      await client.query('ROLLBACK');
       throw e;
     } finally {
       client.release();

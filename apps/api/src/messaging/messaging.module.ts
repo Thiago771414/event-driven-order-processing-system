@@ -1,7 +1,7 @@
-import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
-import { KafkaClient } from "../messaging/kafka.client";
-import { KafkaProducer } from "./kafka.producer";
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { KafkaClient } from '../messaging/kafka.client';
+import { KafkaProducer } from './kafka.producer';
 
 @Module({
   imports: [ConfigModule], // pega ConfigService

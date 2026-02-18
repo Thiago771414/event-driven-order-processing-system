@@ -1,12 +1,17 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
-import type { Consumer } from "kafkajs";
-import { KafkaClient } from "../messaging/kafka.client";
-import { TOPICS } from "./topics";
-import { OrdersProcessor } from "../orders/orders.processor";
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
+import type { Consumer } from 'kafkajs';
+import { KafkaClient } from '../messaging/kafka.client';
+import { TOPICS } from './topics';
+import { OrdersProcessor } from '../orders/orders.processor';
 import {
   OrdersCreatedEventSchema,
   OrdersCreatedDlqEventSchema,
-} from "../orders/orders.events";
+} from '../orders/orders.events';
 
 @Injectable()
 export class KafkaConsumer implements OnModuleInit, OnModuleDestroy {
@@ -19,7 +24,7 @@ export class KafkaConsumer implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
-    this.consumer = this.kafka.consumer("minishop-worker-group");
+    this.consumer = this.kafka.consumer('minishop-worker-group');
 
     await this.consumer.connect();
 
@@ -36,7 +41,7 @@ export class KafkaConsumer implements OnModuleInit, OnModuleDestroy {
 
     await this.consumer.run({
       eachMessage: async ({ topic, message }) => {
-        const raw = message.value?.toString() ?? "";
+        const raw = message.value?.toString() ?? '';
         if (!raw) return;
 
         let json: unknown;
@@ -51,13 +56,15 @@ export class KafkaConsumer implements OnModuleInit, OnModuleDestroy {
         if (topic === TOPICS.ORDERS_CREATED_DLQ) {
           const parsedDlq = OrdersCreatedDlqEventSchema.safeParse(json);
           if (!parsedDlq.success) {
-            this.logger.error(`Invalid DLQ payload: ${parsedDlq.error.message}`);
+            this.logger.error(
+              `Invalid DLQ payload: ${parsedDlq.error.message}`,
+            );
             return;
           }
 
           const evt = parsedDlq.data;
           this.logger.warn(
-            `DLQ message received correlationId=${evt.correlationId} attempts=${evt.attempts} orderId=${evt.originalEvent?.data?.orderId ?? "?"}`,
+            `DLQ message received correlationId=${evt.correlationId} attempts=${evt.attempts} orderId=${evt.originalEvent?.data?.orderId ?? '?'}`,
           );
           return;
         }
@@ -65,7 +72,9 @@ export class KafkaConsumer implements OnModuleInit, OnModuleDestroy {
         // ✅ 2) Normal flow: orders.created
         const parsed = OrdersCreatedEventSchema.safeParse(json);
         if (!parsed.success) {
-          this.logger.error(`Invalid payload on ${topic}: ${parsed.error.message}`);
+          this.logger.error(
+            `Invalid payload on ${topic}: ${parsed.error.message}`,
+          );
           return;
         }
 
@@ -83,7 +92,9 @@ export class KafkaConsumer implements OnModuleInit, OnModuleDestroy {
       },
     });
 
-    this.logger.log(`Consuming: ${TOPICS.ORDERS_CREATED} + ${TOPICS.ORDERS_CREATED_DLQ}`);
+    this.logger.log(
+      `Consuming: ${TOPICS.ORDERS_CREATED} + ${TOPICS.ORDERS_CREATED_DLQ}`,
+    );
   }
 
   async onModuleDestroy() {

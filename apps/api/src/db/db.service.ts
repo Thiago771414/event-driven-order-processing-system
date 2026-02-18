@@ -1,5 +1,5 @@
-import { Injectable, OnModuleDestroy } from "@nestjs/common";
-import { Pool } from "pg";
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Pool } from 'pg';
 
 @Injectable()
 export class DbService implements OnModuleDestroy {
@@ -8,7 +8,7 @@ export class DbService implements OnModuleDestroy {
   constructor() {
     const connectionString = process.env.POSTGRES_URL;
     if (!connectionString) {
-      throw new Error("POSTGRES_URL is not set in .env");
+      throw new Error('POSTGRES_URL is not set in .env');
     }
 
     this.pool = new Pool({ connectionString });

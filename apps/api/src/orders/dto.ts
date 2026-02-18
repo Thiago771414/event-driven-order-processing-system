@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const CreateOrderSchema = z.object({
   customerId: z.string().min(1),

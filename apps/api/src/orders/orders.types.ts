@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const CreateOrderBodySchema = z.object({
   customerId: z.string().min(1),
@@ -16,7 +16,7 @@ export const CreateOrderBodySchema = z.object({
 export type CreateOrderBody = z.infer<typeof CreateOrderBodySchema>;
 
 export type OrderCreatedEvent = {
-  eventName: "orders.created";
+  eventName: 'orders.created';
   eventVersion: 1;
   id: string; // eventId
   occurredAt: string;

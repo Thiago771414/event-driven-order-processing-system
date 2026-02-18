@@ -1,8 +1,8 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const OrdersCreatedEventSchema = z.object({
   eventId: z.string().min(1),
-  type: z.literal("orders.created.v1"),
+  type: z.literal('orders.created.v1'),
   occurredAt: z.string().min(1), // ISO
   correlationId: z.string().min(1),
   idempotencyKey: z.string().min(1),

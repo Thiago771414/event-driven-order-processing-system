@@ -1,5 +1,5 @@
-import { Injectable, OnModuleDestroy } from "@nestjs/common";
-import { Pool } from "pg";
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Pool } from 'pg';
 
 @Injectable()
 export class DbService implements OnModuleDestroy {

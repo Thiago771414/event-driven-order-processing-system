@@ -1,34 +1,36 @@
-import { NestFactory } from "@nestjs/core";
-import { AppModule } from "./app.module";
-import "./otel";
-import { MetricsService } from "./metrics/metrics.service";
-import * as http from "http";
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import './otel';
+import { MetricsService } from './metrics/metrics.service';
+import * as http from 'http';
 
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
-  console.log("[WORKER] Started (no HTTP)");
+  console.log('[WORKER] Started (no HTTP)');
 
   const metrics = app.get(MetricsService);
   const port = Number(process.env.METRICS_PORT ?? 9100);
 
   const server = http.createServer(async (req, res) => {
-    if (req.url === "/metrics") {
+    if (req.url === '/metrics') {
       try {
         res.statusCode = 200;
-        res.setHeader("Content-Type", metrics.contentType);
+        res.setHeader('Content-Type', metrics.contentType);
         res.end(await metrics.getMetrics());
       } catch (e) {
         res.statusCode = 500;
-        res.end("error collecting metrics");
+        res.end('error collecting metrics');
       }
       return;
     }
 
     res.statusCode = 404;
-    res.end("not found");
+    res.end('not found');
   });
 
-  server.listen(port, () => console.log(`[WORKER] Metrics on :${port}/metrics`));
+  server.listen(port, () =>
+    console.log(`[WORKER] Metrics on :${port}/metrics`),
+  );
 }
 
 bootstrap();

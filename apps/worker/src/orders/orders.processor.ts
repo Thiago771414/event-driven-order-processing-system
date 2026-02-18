@@ -1,19 +1,18 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { randomUUID } from "node:crypto";
-import { KafkaClient } from "../messaging/kafka.client";
-import { TOPICS } from "../messaging/topics";
-import { IdempotencyStore } from "./idempotency.store";
+import { Injectable, Logger } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
+import { KafkaClient } from '../messaging/kafka.client';
+import { TOPICS } from '../messaging/topics';
+import { IdempotencyStore } from './idempotency.store';
 import {
   OrdersCreatedEvent,
   OrdersProcessedEventSchema,
   OrdersCreatedDlqEventSchema,
-} from "./orders.events";
-import { MetricsService } from "../metrics/metrics.service";
-import { trace, SpanStatusCode } from "@opentelemetry/api";
-import { OrdersRepository } from "./orders.repository";
+} from './orders.events';
+import { MetricsService } from '../metrics/metrics.service';
+import { trace, SpanStatusCode } from '@opentelemetry/api';
+import { OrdersRepository } from './orders.repository';
 
-
-const tracer = trace.getTracer("minishop-worker");
+const tracer = trace.getTracer('minishop-worker');
 
 @Injectable()
 export class OrdersProcessor {
@@ -45,7 +44,7 @@ export class OrdersProcessor {
   }) {
     const dlq = {
       eventId: randomUUID(),
-      type: "orders.created.dlq.v1" as const,
+      type: 'orders.created.dlq.v1' as const,
       occurredAt: new Date().toISOString(),
       correlationId: input.originalEvent.correlationId,
       idempotencyKey: input.originalEvent.idempotencyKey,
@@ -55,7 +54,8 @@ export class OrdersProcessor {
     };
 
     const ok = OrdersCreatedDlqEventSchema.safeParse(dlq);
-    if (!ok.success) throw new Error(`Invalid DLQ payload: ${ok.error.message}`);
+    if (!ok.success)
+      throw new Error(`Invalid DLQ payload: ${ok.error.message}`);
 
     // ✅ métrica: DLQ
     this.metrics.dlqTotal.inc();
@@ -72,7 +72,10 @@ export class OrdersProcessor {
   /**
    * Wrapper para processar com retry + DLQ
    */
-  async processWithRetry(evt: OrdersCreatedEvent, opts?: { maxAttempts?: number }) {
+  async processWithRetry(
+    evt: OrdersCreatedEvent,
+    opts?: { maxAttempts?: number },
+  ) {
     const maxAttempts = opts?.maxAttempts ?? 5;
 
     let lastErr: unknown = null;
@@ -121,7 +124,7 @@ export class OrdersProcessor {
    */
   async handleOrdersCreated(evt: OrdersCreatedEvent) {
     return tracer.startActiveSpan(
-      "process.orders.created",
+      'process.orders.created',
       {
         attributes: {
           correlationId: evt.correlationId,
@@ -177,11 +180,11 @@ export class OrdersProcessor {
 
     const processed = {
       eventId: randomUUID(),
-      type: "orders.processed.v1" as const,
+      type: 'orders.processed.v1' as const,
       occurredAt: new Date().toISOString(),
       correlationId: evt.correlationId,
       idempotencyKey: evt.idempotencyKey,
-      data: { orderId, status: "processed" as const },
+      data: { orderId, status: 'processed' as const },
     };
 
     const ok = OrdersProcessedEventSchema.safeParse(processed);
@@ -198,9 +201,9 @@ export class OrdersProcessor {
         {
           value: JSON.stringify(processed),
           headers: {
-            "x-correlation-id": evt.correlationId,
-            "x-idempotency-key": evt.idempotencyKey,
-            "x-event-type": processed.type,
+            'x-correlation-id': evt.correlationId,
+            'x-idempotency-key': evt.idempotencyKey,
+            'x-event-type': processed.type,
           },
         },
       ],
@@ -218,6 +221,8 @@ export class OrdersProcessor {
     // ✅ métrica: processado com sucesso
     this.metrics.ordersProcessed.inc();
 
-    this.logger.log(`Published ${TOPICS.ORDERS_PROCESSED} for orderId=${orderId}`);
+    this.logger.log(
+      `Published ${TOPICS.ORDERS_PROCESSED} for orderId=${orderId}`,
+    );
   }
 }

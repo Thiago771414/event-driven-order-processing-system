@@ -27,7 +27,9 @@ export class OutboxPublisher implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    setInterval(() => this.tick().catch(() => {}), this.intervalMs);
+    setInterval(() => {
+      void this.tick();
+    }, this.intervalMs);
   }
 
   private async tick() {

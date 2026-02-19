@@ -21,7 +21,12 @@ export class OutboxPublisher implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit() {
     // polling simples (ex: a cada 1s)
-    this.timer = setInterval(() => this.tick().catch(() => {}), 1000);
+    this.timer = setInterval(() => {
+      this.tick().catch((err) => {
+        this.logger.error(err);
+      });
+    }, 1000);
+
     this.logger.log('[OUTBOX] Publisher started');
   }
 

@@ -26,7 +26,14 @@ export class OutboxRepository {
   async fetchPending(limit = 50): Promise<OutboxEventRow[]> {
     const workerId = process.env.HOSTNAME ?? `outbox-worker-${process.pid}`;
 
-    const { rows } = await this.db.pool.query(
+    const result = await this.db.pool.query<{
+      id: string;
+      topic: string;
+      payload: unknown;
+      correlation_id: string;
+      idempotency_key: string;
+      event_type: string;
+    }>(
       `
       WITH cte AS (
         SELECT id
@@ -54,6 +61,8 @@ export class OutboxRepository {
       `,
       [limit, workerId],
     );
+
+    const rows = result.rows;
 
     return rows.map((r) => ({
       id: r.id,
@@ -103,15 +112,13 @@ export class OutboxRepository {
   }
 
   async getOldestPendingCreatedAt(): Promise<Date | null> {
-    const { rows } = await this.db.pool.query(
-      `
-    SELECT MIN(created_at) AS oldest
-    FROM outbox_events
-    WHERE sent_at IS NULL
-    `,
-    );
+    const result = await this.db.pool.query<{ oldest: Date | null }>(`
+      SELECT MIN(created_at) AS oldest
+      FROM outbox_events
+      WHERE sent_at IS NULL
+    `);
 
-    const oldest = rows?.[0]?.oldest as string | null;
-    return oldest ? new Date(oldest) : null;
+    const oldest = result.rows[0]?.oldest ?? null;
+    return oldest;
   }
 }

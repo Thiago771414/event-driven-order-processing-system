@@ -59,6 +59,7 @@ Key benefits:
 ✔ easier fault isolation
 
 ##🧠 Architecture Overview
+![MiniShop Architecture](https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/arquitetura.png)
 ```ts
 Client
   ↓
@@ -114,6 +115,7 @@ Jaeger provides distributed tracing across the system.
 ```ts
 HTTP → Kafka → Worker → Database
 ```
+![Observability Dashboard](https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/observalidade.png)
 
 Observability Layer:
 ```ts
@@ -352,6 +354,3 @@ chaos testing
 
 ## 👤 Autor - Thiago Reis Lima
 Distributed Systems Engineering Case Study
-
-![Dashboard](https://raw.githubusercontent.com/Thiago771414/imagensProjetos/blob/main/slices/mobile/arquitetura.png)
-![Dashboard](https://raw.githubusercontent.com/Thiago771414/imagensProjetos/blob/main/slices/mobile/observalidade.png)

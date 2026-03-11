@@ -4,6 +4,26 @@ Production-grade distributed system demonstrating event-driven architecture, rel
 
 This project simulates how large-scale platforms process orders through asynchronous event pipelines, ensuring scalability, resilience, and traceability across distributed services.
 
+![Architecture](https://img.shields.io/badge/Architecture-Event%20Driven-orange)
+![Messaging](https://img.shields.io/badge/Messaging-Kafka-red)
+![Pattern](https://img.shields.io/badge/Pattern-Outbox%20Pattern-blue)
+![Pattern](https://img.shields.io/badge/Pattern-Idempotent%20Processing-green)
+![Queue](https://img.shields.io/badge/Reliability-DLQ-purple)
+
+![Observability](https://img.shields.io/badge/Observability-Prometheus-orange)
+![Dashboards](https://img.shields.io/badge/Dashboards-Grafana-red)
+![Tracing](https://img.shields.io/badge/Tracing-Jaeger-blue)
+![Telemetry](https://img.shields.io/badge/OpenTelemetry-enabled-green)
+
+![Runtime](https://img.shields.io/badge/Runtime-Node.js-green)
+![Language](https://img.shields.io/badge/Language-TypeScript-blue)
+![Framework](https://img.shields.io/badge/Framework-NestJS-red)
+![Database](https://img.shields.io/badge/Database-PostgreSQL-blue)
+![Cache](https://img.shields.io/badge/Cache-Redis-red)
+![Container](https://img.shields.io/badge/Container-Docker-blue)
+
+![AI Observability](https://img.shields.io/badge/AI-MCP%20Diagnostics-purple)
+
 ## 🎯 Problem
 
 Modern platforms must handle high volumes of requests while maintaining reliability and scalability.
@@ -77,7 +97,7 @@ Outbox Worker → Kafka
   ↓
 Worker Consumer
   ↓
-Processamento idempotente
+Idempotent processing
   ↓
 Redis + PostgreSQL
 ```

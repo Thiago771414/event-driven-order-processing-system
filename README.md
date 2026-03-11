@@ -1,9 +1,5 @@
 ## 🚀 MiniShop — Event-Driven Distributed Architecture
 
-Production-grade distributed system demonstrating event-driven architecture, reliability patterns, and full observability.
-
-This project simulates how large-scale platforms process orders through asynchronous event pipelines, ensuring scalability, resilience, and traceability across distributed services.
-
 ![Architecture](https://img.shields.io/badge/Architecture-Event%20Driven-orange)
 ![Messaging](https://img.shields.io/badge/Messaging-Kafka-red)
 ![Pattern](https://img.shields.io/badge/Pattern-Outbox%20Pattern-blue)
@@ -26,6 +22,10 @@ This project simulates how large-scale platforms process orders through asynchro
 ![CI](https://img.shields.io/badge/CI-GitHub%20Actions-blue)
 ![Tests](https://img.shields.io/badge/Tests-Automated-green)
 ![Reliability](https://img.shields.io/badge/System-Reliability-critical)
+
+Production-grade distributed system demonstrating event-driven architecture, reliability patterns, and full observability.
+
+This project simulates how large-scale platforms process orders through asynchronous event pipelines, ensuring scalability, resilience, and traceability across distributed services.
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/arquitetura.png" width="900">

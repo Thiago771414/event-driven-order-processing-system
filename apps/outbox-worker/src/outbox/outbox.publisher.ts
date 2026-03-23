@@ -20,7 +20,6 @@ export class OutboxPublisher implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    // polling simples (ex: a cada 1s)
     this.timer = setInterval(() => {
       this.tick().catch((err) => {
         this.logger.error(err);
@@ -35,7 +34,6 @@ export class OutboxPublisher implements OnModuleInit, OnModuleDestroy {
   }
 
   private async tick() {
-    // 1) lag da fila (antes de processar)
     const oldest = await this.repo.getOldestPendingCreatedAt();
     if (!oldest) {
       this.metrics.outboxLagSeconds.set(0);
@@ -50,10 +48,19 @@ export class OutboxPublisher implements OnModuleInit, OnModuleDestroy {
       this.metrics.outboxInflight.inc();
 
       try {
-        await this.producer.send(evt.topic, evt.payload, {
-          correlationId: evt.correlationId,
-          idempotencyKey: evt.idempotencyKey,
-          eventType: evt.eventType,
+        await this.producer.send({
+          topic: evt.topic,
+          messages: [
+            {
+              key: evt.partitionKey ?? evt.id,
+              value: JSON.stringify(evt.payload),
+              headers: {
+                correlationId: evt.correlationId,
+                idempotencyKey: evt.idempotencyKey,
+                eventType: evt.eventType,
+              },
+            },
+          ],
         });
 
         await this.repo.markPublished(evt.id);

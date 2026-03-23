@@ -27,6 +27,11 @@ export class OutboxPublisher implements OnModuleInit {
   ) {}
 
   onModuleInit() {
+    if (process.env.OUTBOX_PUBLISHER_ENABLED !== 'true') {
+      this.logger.log('[OUTBOX] API publisher disabled by env');
+      return;
+    }
+
     setInterval(() => {
       this.tick().catch((err) => {
         const msg = err instanceof Error ? err.message : String(err);

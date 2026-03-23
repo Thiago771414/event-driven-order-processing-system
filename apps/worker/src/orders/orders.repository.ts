@@ -6,7 +6,7 @@ export class OrdersRepository {
   constructor(private readonly db: DbService) {}
 
   async markProcessed(orderId: string): Promise<void> {
-    await this.db.pool.query<void>(
+    await this.db.pool.query(
       `
       UPDATE orders
       SET status = 'processed',

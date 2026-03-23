@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { Kafka } from 'kafkajs';
+import { Kafka, ProducerRecord } from 'kafkajs';
 
 @Injectable()
 export class KafkaProducer implements OnModuleDestroy {
@@ -11,33 +11,13 @@ export class KafkaProducer implements OnModuleDestroy {
   private producer = this.kafka.producer();
   private connected = false;
 
-  async send(
-    topic: string,
-    payload: unknown,
-    meta?: {
-      correlationId?: string;
-      idempotencyKey?: string;
-      eventType?: string;
-    },
-  ) {
+  async send(record: ProducerRecord): Promise<void> {
     if (!this.connected) {
       await this.producer.connect();
       this.connected = true;
     }
 
-    await this.producer.send({
-      topic,
-      messages: [
-        {
-          value: JSON.stringify(payload),
-          headers: {
-            'x-correlation-id': meta?.correlationId ?? '',
-            'x-idempotency-key': meta?.idempotencyKey ?? '',
-            'x-event-type': meta?.eventType ?? '',
-          },
-        },
-      ],
-    });
+    await this.producer.send(record);
   }
 
   async onModuleDestroy() {

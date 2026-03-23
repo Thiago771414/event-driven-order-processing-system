@@ -4,7 +4,7 @@ import { DbService } from '../db/db.service';
 export type OutboxEventDbRow = {
   id: string;
   topic: string;
-  payload: unknown; // pode vir string/json
+  payload: unknown;
   correlation_id: string;
   idempotency_key: string;
   event_type: string;
@@ -51,7 +51,7 @@ export class OutboxRepository {
 
       const ids = rows.map((r) => r.id);
 
-      await client.query<void>(
+      await client.query(
         `
         UPDATE outbox_events
         SET locked_at = now(), locked_by = $2
@@ -71,7 +71,7 @@ export class OutboxRepository {
   }
 
   async markSent(id: string): Promise<void> {
-    await this.db.pool.query<void>(
+    await this.db.pool.query(
       `UPDATE outbox_events SET sent_at = now(), locked_at = NULL, locked_by = NULL WHERE id = $1`,
       [id],
     );
@@ -82,7 +82,7 @@ export class OutboxRepository {
     error: string,
     baseBackoffMs: number,
   ): Promise<void> {
-    await this.db.pool.query<void>(
+    await this.db.pool.query(
       `
       UPDATE outbox_events
       SET
@@ -98,7 +98,7 @@ export class OutboxRepository {
   }
 
   async markDead(id: string, error: string): Promise<void> {
-    await this.db.pool.query<void>(
+    await this.db.pool.query(
       `
       UPDATE outbox_events
       SET

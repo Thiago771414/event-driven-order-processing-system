@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { KafkaClient } from '../messaging/kafka.client';
 import { TOPICS } from '../messaging/topics';
-import { IdempotencyStore } from './idempotency.store';
+import { RedisIdempotencyStore } from './redis-idempotency.store';
 import {
   OrdersCreatedEvent,
   OrdersProcessedEventSchema,
@@ -20,9 +20,9 @@ export class OrdersProcessor {
 
   constructor(
     private readonly kafka: KafkaClient,
-    private readonly idem: IdempotencyStore,
+    private readonly idem: RedisIdempotencyStore,
     private readonly metrics: MetricsService,
-    private readonly ordersRepo: OrdersRepository, // ✅ injetar OrdersRepository
+    private readonly ordersRepo: OrdersRepository,
   ) {}
 
   private sleep(ms: number) {
@@ -54,24 +54,25 @@ export class OrdersProcessor {
     };
 
     const ok = OrdersCreatedDlqEventSchema.safeParse(dlq);
-    if (!ok.success)
+    if (!ok.success) {
       throw new Error(`Invalid DLQ payload: ${ok.error.message}`);
+    }
 
-    // ✅ métrica: DLQ
     this.metrics.dlqTotal.inc();
 
     const producer = this.kafka.producer();
     await producer.connect();
     await producer.send({
       topic: TOPICS.ORDERS_CREATED_DLQ,
-      messages: [{ value: JSON.stringify(dlq) }],
+      messages: [
+        {
+          value: JSON.stringify(dlq),
+        },
+      ],
     });
     await producer.disconnect();
   }
 
-  /**
-   * Wrapper para processar com retry + DLQ
-   */
   async processWithRetry(
     evt: OrdersCreatedEvent,
     opts?: { maxAttempts?: number },
@@ -93,7 +94,6 @@ export class OrdersProcessor {
         );
 
         if (attempt < maxAttempts) {
-          // ✅ métrica: retry
           this.metrics.retriesTotal.inc();
 
           const wait = this.backoffMs(attempt);
@@ -106,7 +106,6 @@ export class OrdersProcessor {
       }
     }
 
-    // estourou tentativas -> DLQ
     const e = lastErr instanceof Error ? lastErr : new Error(String(lastErr));
     await this.publishDlq({
       originalEvent: evt,
@@ -119,9 +118,6 @@ export class OrdersProcessor {
     );
   }
 
-  /**
-   * Handler do evento: cria span + mede duração + chama processamento real
-   */
   async handleOrdersCreated(evt: OrdersCreatedEvent): Promise<void> {
     await new Promise<void>((resolve, reject) => {
       tracer.startActiveSpan(
@@ -160,20 +156,15 @@ export class OrdersProcessor {
     });
   }
 
-  /**
-   * Processamento real (uma tentativa)
-   * - idempotência
-   * - publish orders.processed
-   * - métricas de sucesso
-   */
   private async processOrder(evt: OrdersCreatedEvent) {
     const orderId = evt.data.orderId;
-    const key = `orders.created.v1:${evt.idempotencyKey}`;
+    const key = `orders.created.v1:${orderId}`;
 
-    const existing = this.idem.get(key);
-    if (existing) {
+    const claimed = await this.idem.tryAcquire(key);
+
+    if (!claimed) {
       this.logger.warn(
-        `Skipping duplicate idempotencyKey=${evt.idempotencyKey} orderId=${orderId}`,
+        `Skipping duplicate orderId=${orderId} idempotencyKey=${evt.idempotencyKey}`,
       );
       return;
     }
@@ -203,6 +194,7 @@ export class OrdersProcessor {
       topic: TOPICS.ORDERS_PROCESSED,
       messages: [
         {
+          key: orderId,
           value: JSON.stringify(processed),
           headers: {
             'x-correlation-id': evt.correlationId,
@@ -214,14 +206,8 @@ export class OrdersProcessor {
     });
     await producer.disconnect();
 
-    this.idem.set(key, {
-      processedAt: new Date().toISOString(),
-      orderId,
-    });
-
     await this.ordersRepo.markProcessed(orderId);
 
-    // ✅ métrica: processado com sucesso
     this.metrics.ordersProcessed.inc();
 
     this.logger.log(

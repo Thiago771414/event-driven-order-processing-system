@@ -25,6 +25,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@opentelemetry/exporter-trace-otlp-http": "^0.210.0",
+    "ioredis": "^5.10.1",
     "kafkajs": "^2.2.4",
     "pg": "^8.17.2",
     "reflect-metadata": "^0.2.2",

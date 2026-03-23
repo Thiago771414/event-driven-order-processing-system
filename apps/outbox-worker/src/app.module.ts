@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { MessagingModule } from './messaging/messaging.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { DbModule } from './db/db.module';
-import { OrdersModule } from './orders/orders.module'; // ✅
+import { OutboxModule } from './outbox/outbox.module';
 
 @Module({
   imports: [
@@ -14,7 +14,7 @@ import { OrdersModule } from './orders/orders.module'; // ✅
     MessagingModule,
     MetricsModule,
     DbModule,
-    OrdersModule, // ✅
+    OutboxModule,
   ],
 })
 export class AppModule {}

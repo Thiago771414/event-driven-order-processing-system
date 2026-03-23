@@ -5,17 +5,17 @@ import { MetricsModule } from '../metrics/metrics.module';
 
 import { OrdersRepository } from './orders.repository';
 import { OrdersProcessor } from './orders.processor';
-import { IdempotencyStore } from './idempotency.store';
+import { RedisIdempotencyStore } from './redis-idempotency.store';
 
-import { KafkaConsumer } from '../messaging/consumer'; // ✅ ajuste o path se necessário
+import { KafkaConsumer } from '../messaging/consumer';
 
 @Module({
   imports: [DbModule, MessagingModule, MetricsModule],
   providers: [
     OrdersRepository,
     OrdersProcessor,
-    IdempotencyStore,
+    RedisIdempotencyStore,
     KafkaConsumer,
-  ], // ✅
+  ],
 })
 export class OrdersModule {}

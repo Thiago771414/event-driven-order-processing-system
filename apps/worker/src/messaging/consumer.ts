@@ -24,19 +24,20 @@ export class KafkaConsumer implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
+    const fromBeginning = process.env.KAFKA_FROM_BEGINNING === 'true';
+
     this.consumer = this.kafka.consumer('minishop-worker-group');
 
     await this.consumer.connect();
 
-    // ✅ assina os dois tópicos
     await this.consumer.subscribe({
       topic: TOPICS.ORDERS_CREATED,
-      fromBeginning: true,
+      fromBeginning,
     });
 
     await this.consumer.subscribe({
       topic: TOPICS.ORDERS_CREATED_DLQ,
-      fromBeginning: true,
+      fromBeginning,
     });
 
     await this.consumer.run({
@@ -52,7 +53,6 @@ export class KafkaConsumer implements OnModuleInit, OnModuleDestroy {
           return;
         }
 
-        // ✅ 1) DLQ audit: parse + log e para aqui
         if (topic === TOPICS.ORDERS_CREATED_DLQ) {
           const parsedDlq = OrdersCreatedDlqEventSchema.safeParse(json);
           if (!parsedDlq.success) {
@@ -69,7 +69,6 @@ export class KafkaConsumer implements OnModuleInit, OnModuleDestroy {
           return;
         }
 
-        // ✅ 2) Normal flow: orders.created
         const parsed = OrdersCreatedEventSchema.safeParse(json);
         if (!parsed.success) {
           this.logger.error(
@@ -81,7 +80,6 @@ export class KafkaConsumer implements OnModuleInit, OnModuleDestroy {
         const evt = parsed.data;
 
         try {
-          // OrdersProcessor já faz retry + DLQ + métricas + spans
           await this.orders.processWithRetry(evt);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -93,7 +91,7 @@ export class KafkaConsumer implements OnModuleInit, OnModuleDestroy {
     });
 
     this.logger.log(
-      `Consuming: ${TOPICS.ORDERS_CREATED} + ${TOPICS.ORDERS_CREATED_DLQ}`,
+      `Consuming: ${TOPICS.ORDERS_CREATED} + ${TOPICS.ORDERS_CREATED_DLQ} fromBeginning=${fromBeginning}`,
     );
   }
 

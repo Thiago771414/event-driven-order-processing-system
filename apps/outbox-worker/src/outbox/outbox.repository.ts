@@ -1,4 +1,3 @@
-// apps/outbox-worker/src/outbox/outbox.repository.ts
 import { Injectable } from '@nestjs/common';
 import { DbService } from '../db/db.service';
 
@@ -6,10 +5,10 @@ export type OutboxEventRow = {
   id: string;
   topic: string;
   payload: unknown;
-
   correlationId: string;
   idempotencyKey: string;
   eventType: string;
+  partitionKey: string | null;
 };
 
 type OldestRow = { oldest: string | null };
@@ -18,13 +17,6 @@ type OldestRow = { oldest: string | null };
 export class OutboxRepository {
   constructor(private readonly db: DbService) {}
 
-  /**
-   * Busca e "reserva" eventos pendentes usando lock otimista no banco.
-   * - só pega sent_at IS NULL
-   * - só pega next_attempt_at <= now()
-   * - respeita max_attempts
-   * - marca locked_at/locked_by e devolve os eventos reservados
-   */
   async fetchPending(limit = 50): Promise<OutboxEventRow[]> {
     const workerId = process.env.HOSTNAME ?? `outbox-worker-${process.pid}`;
 
@@ -35,6 +27,7 @@ export class OutboxRepository {
       correlation_id: string;
       idempotency_key: string;
       event_type: string;
+      partition_key: string | null;
     }>(
       `
       WITH cte AS (
@@ -59,7 +52,8 @@ export class OutboxRepository {
         e.payload,
         e.correlation_id,
         e.idempotency_key,
-        e.event_type
+        e.event_type,
+        e.partition_key
       `,
       [limit, workerId],
     );
@@ -73,25 +67,12 @@ export class OutboxRepository {
       correlationId: r.correlation_id,
       idempotencyKey: r.idempotency_key,
       eventType: r.event_type,
+      partitionKey: r.partition_key ?? null,
     }));
   }
 
   async markPublished(id: string) {
-    await this.db.pool.query<void>(
-      `
-    UPDATE outbox_events
-    SET sent_at = now(),
-        locked_at = NULL,
-        locked_by = NULL,
-        last_error = NULL
-    WHERE id = $1
-    `,
-      [id],
-    );
-  }
-
-  async markPublished(id: string) {
-    await this.db.pool.query<void>(
+    await this.db.pool.query(
       `
     UPDATE outbox_events
     SET sent_at = now(),
@@ -105,7 +86,7 @@ export class OutboxRepository {
   }
 
   async markFailed(id: string, errorMessage: string) {
-    await this.db.pool.query<void>(
+    await this.db.pool.query(
       `
     UPDATE outbox_events
     SET attempts = attempts + 1,

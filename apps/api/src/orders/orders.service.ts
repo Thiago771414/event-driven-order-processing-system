@@ -65,7 +65,7 @@ export class OrdersService {
     try {
       await client.query('BEGIN');
 
-      await client.query<void>(
+      await client.query(
         `
         INSERT INTO orders (id, customer_id, total, status, idempotency_key, correlation_id)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -80,12 +80,22 @@ export class OrdersService {
         ],
       );
 
-      await client.query<void>(
+      await client.query(
         `
         INSERT INTO outbox_events
-          (id, aggregate_type, aggregate_id, event_type, topic, payload, correlation_id, idempotency_key)
+          (
+            id,
+            aggregate_type,
+            aggregate_id,
+            event_type,
+            topic,
+            payload,
+            correlation_id,
+            idempotency_key,
+            partition_key
+          )
         VALUES
-          ($1, $2, $3, $4, $5, $6::jsonb, $7, $8)
+          ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9)
         `,
         [
           outboxId,
@@ -96,6 +106,7 @@ export class OrdersService {
           JSON.stringify(event),
           correlationId,
           idempotencyKey,
+          orderId,
         ],
       );
 
@@ -107,7 +118,6 @@ export class OrdersService {
     } catch (e: unknown) {
       await client.query('ROLLBACK');
 
-      // Postgres unique_violation
       const err = e as { code?: string };
       if (err.code === '23505') {
         throw new ConflictException('Duplicate idempotency key');

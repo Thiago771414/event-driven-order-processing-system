@@ -23,45 +23,48 @@
 ![Tests](https://img.shields.io/badge/Tests-Automated-green)
 ![Reliability](https://img.shields.io/badge/System-Reliability-critical)
 
-Production-grade distributed system demonstrating event-driven architecture, reliability patterns, and full observability.
+Overview
 
-This project simulates how large-scale platforms process orders through asynchronous event pipelines, ensuring scalability, resilience, and traceability across distributed services.
+MiniShop is a production-grade distributed system designed to simulate how modern platforms (like Uber, Stripe, and Shopify) handle high-scale event processing.
+
+It demonstrates:
+
+Event-driven architecture with Kafka
+Reliable messaging using the Outbox Pattern
+Distributed idempotency with Redis
+Auto-scaling workers using Kubernetes + KEDA
+Full observability (metrics, tracing, AI queries)
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/arquitetura.png" width="900">
+  <img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/kubernetsKeda.png" width="900">
 </p>
 
-## 🎯 Problem
+## 🧠 Problem
 
-Modern platforms must handle high volumes of requests while maintaining reliability and scalability.
+Modern systems must handle:
 
-Traditional synchronous architectures often suffer from:
+High concurrency (thousands of events)
+Event consistency (no lost or duplicated events)
+Scalability (dynamic workload)
+Observability (debugging distributed flows)
 
-tight coupling between services
+Naive architectures often fail due to:
 
-cascading failures across the system
-
-difficulty handling traffic spikes
-
-limited observability and traceability
-
-Systems responsible for critical workflows — such as orders, payments, or financial transactions — require architectures that guarantee data consistency and reliable asynchronous processing.
+Direct API → Kafka coupling
+Duplicate processing
+Lack of retry strategies
+Poor scaling models
 
 ## 💡 Solution
 
-MiniShop demonstrates a production-style event-driven architecture built with Kafka and the Outbox Pattern.
+MiniShop solves these challenges using a decoupled, event-driven architecture:
 
-Instead of processing requests synchronously, the system separates responsibilities across independent components:
-
-REST API receives requests
-
-PostgreSQL stores orders and events in an outbox table
-
-Outbox Worker publishes events to Kafka
-
-Worker Services consume and process events asynchronously
-
-This architecture ensures reliable event delivery, horizontal scalability, and improved fault tolerance.
+Key principles:
+API writes → Outbox
+Outbox Worker publishes → Kafka
+Workers consume → process asynchronously
+Redis ensures idempotency
+KEDA scales workers based on Kafka lag
 
 ## 💼 Business Value
 
@@ -92,19 +95,78 @@ Key benefits:
 ```ts
 Client
   ↓
-API (REST)
+API (Kubernetes)
   ↓
-PostgreSQL (orders + outbox)
+Postgres (orders + outbox_events)
   ↓
-Outbox Worker → Kafka
+Outbox Worker
   ↓
-Worker Consumer
+Kafka (orders.created)
   ↓
-Idempotent processing
+Worker (auto-scaled via KEDA)
   ↓
-Redis + PostgreSQL
+Redis (idempotency)
+  ↓
+Processing complete
 ```
+## ⚙️ Core Components
+
+🔵 API (NestJS)
+Receives requests
+Validates input
+Writes:
+orders
+outbox_events
+Does NOT publish to Kafka directly
+🟡 PostgreSQL (Outbox Pattern)
+Guarantees atomicity:
+```ts
+Order + Event in same transaction
+```
+Prevents lost events
+🟣 Outbox Worker
+Reads pending events
+Publishes to Kafka
+Handles:
+retries
+exponential backoff
+DLQ (dead-letter queue)
+🔴 Kafka
+Event backbone
+Topics:
+orders.created
+orders.created.DLQ
+Uses partition_key = orderId → ensures ordering
+🟢 Worker (Consumer)
+Consumes Kafka events
+Processes orders
+Uses:
+retry
+DLQ fallback
+metrics + tracing
+🟠 Redis (Idempotency)
+
+Ensures:
+```ts
+1 event = 1 effective processing
+```
+Prevents:
+
+duplicate messages
+reprocessing errors
+⚫ KEDA (Auto Scaling)
+Scales workers based on:
+```ts
+Kafka lag
+```
+Example:
+```ts
+lag = 0 → 0 pods
+lag = high → scale up automatically
+```
+
 ## ⚙️ Key Engineering Concepts
+
 Event-Driven Architecture
 
 Requests are processed through asynchronous event pipelines.
@@ -155,7 +217,10 @@ Prometheus ← metrics
 Grafana ← dashboards
 Jaeger ← traces
 MCP server ← AI diagnostics
+MCP Server → AI-powered querying
 ```
+Query system health using PromQL via MCP
+
 ## 🤖 AI-Assisted Observability (MCP)
 
 The system includes an MCP server that allows AI agents to query monitoring data such as:
@@ -167,6 +232,34 @@ system health targets
 diagnostic insights
 
 This enables AI-assisted troubleshooting and automated diagnostics.
+
+## 🔐 Reliability Features
+✅ Outbox Pattern
+Prevents event loss
+✅ Idempotency (Redis)
+Prevents duplicate processing
+✅ Retry + Backoff
+Handles transient failures
+✅ DLQ (Dead Letter Queue)
+Captures failed events safely
+✅ Partitioned Kafka
+Guarantees ordering per entity
+
+## 📈 Scalability
+Horizontal scaling via Kubernetes + KEDA
+```ts
+Workers scale automatically based on Kafka lag
+```
+Separation of concerns
+<div align="center">
+
+| Component | Strategy |
+| :--- | ---: |
+| API | CPU-based |
+| Worker | Event-based scaling |
+| Outbox Worker | Throughput-based |
+
+</div>
 
 ## 📁 Repository Structure
 ```ts
@@ -191,6 +284,10 @@ minishop/
 │
 └── README.md
 ```
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/arquitetura.png" width="900">
+</p>
 
 ## 🔧 Core Components
 
@@ -359,31 +456,82 @@ pnpm -C mcp dev
 ```
 ## ☸️ Kubernetes Deployment
 
-Kubernetes manifests are available in:
-```ts
-/k8s
+Apply manifests:
+
+```bash
+kubectl apply -f k8s/redis.yaml
+kubectl apply -f k8s/worker-keda.yaml
 ```
-Deploy with:
-```ts
-kubectl apply -k k8s/
+Check system:
+
+```bash
+kubectl get pods -n minishop
+kubectl logs -n minishop deployment/worker
+kubectl get scaledobject -n minishop
 ```
-## 🚀 Possible Extensions
 
-GKE deployment
+## 🧠 Design Decisions
 
-GitHub Actions CD
+# Why Outbox?
 
-API Gateway (Apigee)
+Avoids:
 
-feature flags
+lost events
+inconsistent state
 
-BFF architecture
+# Why Kafka?
 
-hexagonal architecture
+Enables:
 
-circuit breaker pattern
+decoupling
+scalability
+event streaming
 
-chaos testing
+# Why Redis?
+
+Handles:
+
+distributed idempotency
+real-world duplicate scenarios
+
+# Why KEDA?
+
+Provides:
+
+event-driven scaling
+cost-efficient infrastructure
+
+## 💼 Real-World Relevance
+
+This architecture mirrors patterns used by:
+
+Stripe (event processing)
+Uber (asynchronous systems)
+Shopify (order pipelines)
+
+## 🚀 What This Project Demonstrates
+
+Distributed system design
+Event-driven architecture
+Production-grade reliability patterns
+Kubernetes + autoscaling
+Observability best practices
+AI-powered system introspection (MCP)
+
+##🔥 Future Improvements
+
+CD pipeline (GitHub Actions → Kubernetes)
+Helm charts for deployment
+Kafka cluster inside Kubernetes
+Multi-region replication
+AI agent for auto-debugging (MCP + LLM)
 
 ## 👤 Autor - Thiago Reis Lima
-Distributed Systems Engineering Case Study
+Software Engineer & AI Systems Builder
+Focused on scalable architectures, automation, and real-world systems.
+
+## ⭐ Final Note
+
+This is not just a demo.
+
+👉 It’s a production-inspired system design showcasing how modern distributed platforms are built.

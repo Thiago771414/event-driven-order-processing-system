@@ -507,37 +507,64 @@ Contains declarative, production-ready manifests for enterprise cluster environm
 
 ---
 
-### Deep Dive: The Transactional Outbox Pattern
+### Deep Dive: Transactional Outbox Pattern
 
-To eliminate the hazardous **Dual-Write Anti-Pattern** (where a system attempts to write to a database and a message broker simultaneously), the architecture enforces strict transactional boundaries at the database level.
+To eliminate the hazardous **Dual-Write Anti-Pattern**, where a service tries to persist business state and publish a message at the same time, this architecture moves event publication behind a strict **database-backed transactional boundary**.
 
 ```mermaid
 flowchart TD
-    Client[Client] -->|HTTP Request| API[API Layer]
-    
-    subgraph DB_TX ["Postgres Engine (Single ACID Transaction)"]
-        direction TB
-        SQL1["💾 SQL: Insert Order State"]
-        SQL2["💾 SQL: Insert Domain Event (Outbox)"]
-        SQL1 --- SQL2
+
+    A[Client Request]
+
+    subgraph Edge Layer
+        B[API Ingress Layer]
     end
 
-    API -->|1. Commit Transaction| DB_TX
-    DB_TX -->|2. Transaction Committed| OutboxWorker[Outbox Worker]
-    OutboxWorker -->|3. Asynchronous Polling & Publish| Kafka[Apache Kafka Mesh]
+    subgraph Transaction Boundary
+        direction TB
+        C[(PostgreSQL<br/>Single ACID Transaction)]
+        C1[Persist Order State]
+        C2[Append Domain Event<br/>Outbox Ledger]
 
-    %% Estilização para um visual moderno e sênior
-    style Client fill:#ECEFF1,stroke:#37474F,stroke-width:2px
-    style API fill:#E3F2FD,stroke:#1E88E5,stroke-width:2px
-    style DB_TX fill:#FFF3E0,stroke:#FB8C00,stroke-width:2px
-    style SQL1 fill:#FFFFFF,stroke:#FFA726,stroke-width:1px
-    style SQL2 fill:#FFFFFF,stroke:#FFA726,stroke-width:1px
-    style OutboxWorker fill:#E8F5E9,stroke:#43A047,stroke-width:2px
-    style Kafka fill:#F3E5F5,stroke:#8E24AA,stroke-width:2px
+        C --> C1
+        C --> C2
+    end
+
+    subgraph Delivery Layer
+        D[Outbox Publisher Worker]
+    end
+
+    subgraph Streaming Layer
+        E[Apache Kafka Event Mesh]
+    end
+
+    A -->|HTTP Request| B
+
+    B -->|Commit State + Event Atomically| C
+
+    C2 -->|Committed Event Record| D
+
+    D -->|Asynchronous Polling + Publish| E
 ```
-1. **Atomic Persistence:** The API layer bundle both the mutation of the entity state (e.g., creating an order) and the emission of the domain event into a **single, local ACID transaction** block inside PostgreSQL.
-2. **Asynchronous Delivery:** Once the database commit succeeds, the state is locked. The decoupled **Outbox Worker** independently polls the append-only table, extracts the unread events, and guarantees their delivery into Kafka.
-3. **Resilience Result:** Even if the message broker suffers a major outage, the customer’s checkout flow remains uninterrupted. Events are safely queued in the relational engine and processed automatically as soon as network connectivity is restored.
+
+#### Execution Flow
+
+| Step | Stage | What Happens |
+| --- | --- | --- |
+| **1** | **Atomic Persistence** | The API persists the order state and appends the domain event into the outbox table inside one local PostgreSQL ACID transaction. |
+| **2** | **Deferred Delivery** | After the commit succeeds, the Outbox Publisher Worker polls the outbox ledger and publishes pending events asynchronously. |
+| **3** | **Kafka Propagation** | Kafka receives the event as part of the distributed event stream, allowing downstream consumers to react independently. |
+| **4** | **Failure Safety** | If Kafka is temporarily unavailable, the event remains safely stored in PostgreSQL and can be retried without losing the business transaction. |
+
+#### Engineering Outcome
+
+| Capability | Impact |
+| --- | --- |
+| **No Dual Writes** | The system avoids partial success between database writes and broker publishing. |
+| **ACID-Protected Events** | Business state and domain events are persisted under the same transactional guarantee. |
+| **Resilient Messaging** | Broker outages do not interrupt the customer checkout flow. |
+| **Eventual Consistency** | Downstream services converge asynchronously after the local transaction is committed. |
+| **Operational Recovery** | Failed publications can be retried from the outbox ledger without manual reconstruction. |
 
 ### Key Architectural Benefits
 

@@ -156,30 +156,54 @@ The repository includes a complete operational demo showcasing Kafka event strea
 
 ## Engineering Simulation Labs
 
-This repository is no longer just a backend API project. It also serves as an architecture experimentation environment inspired by Uber Engineering, Stripe Reliability Engineering, Netflix Distributed Systems, and Mercado Libre Platform Engineering.
+This repository evolved beyond a traditional backend API implementation and became a **distributed systems experimentation platform** focused on reliability engineering, operational transparency, and event-driven architecture simulations.
 
-- Distributed tracing visualization
-- Event streaming simulations
-- Educational testing environment for Transactional Outbox
-- Reliability and SRE experimentation
-- Secure AI operational gateway for MCP
-- Customer trust and operational transparency simulations
-- AI-assisted architecture diagnostics
-- Interactive UML architecture modeling
+Inspired by engineering principles from Uber, Stripe, Netflix, Mercado Libre, and modern cloud-native platform teams, the project provides interactive environments to study how large-scale systems behave under real operational pressure.
+
+The primary goal is not only to build features, but to simulate how resilient architectures handle:
+
+- asynchronous workflows
+- distributed consistency
+- observability pipelines
+- failure recovery
+- operational trust
+- AI-assisted diagnostics
+- production-safe automation
+
+### Core Engineering Domains
+
+| Domain | Why It Exists |
+| --- | --- |
+| **Distributed Tracing Visualization** | Helps engineers understand request propagation, trace correlation, and latency across asynchronous services and Kafka-driven workflows. |
+| **Event Streaming Simulations** | Demonstrates how event-driven systems propagate state changes through distributed consumers without tight service coupling. |
+| **Transactional Outbox Playground** | Simulates reliable event publication strategies that eliminate dual-write inconsistencies between databases and message brokers. |
+| **Reliability & SRE Experiments** | Explores retry strategies, failure recovery, resiliency patterns, and operational stability under degraded infrastructure scenarios. |
+| **Secure MCP Gateway** | Demonstrates how AI operational assistants can safely interact with production telemetry while enforcing guardrails and PII protection. |
+| **Customer Trust Simulations** | Models transparency strategies inspired by modern platform companies where operational visibility improves customer confidence during incidents. |
+| **AI-Assisted Diagnostics** | Explores how LLMs and AI operational workflows can accelerate incident investigation and observability analysis. |
+| **Interactive UML Modeling** | Provides architecture visualization environments to explain distributed workflows, event choreography, and bounded contexts. |
 
 ---
 
-## Screenshots and Architecture Visualizations
+## Screenshots & Architecture Visualizations
 
-Placeholder for the visual gallery of test environments and observability consoles:
+The repository also includes interactive architecture previews, operational dashboards, distributed flow simulations, and reliability engineering visualizations designed to emulate real-world platform engineering environments.
 
-- AI Operations Console
-- Transactional Outbox Simulator
-- UML Use Case Sandbox
-- Distributed Sequence Flow
-- Customer Reliability Console
-- Grafana Observability Dashboard
-- Jaeger Distributed Tracing
+These visual assets are not decorative screenshots — they represent operational concepts commonly found in production-grade distributed systems.
+
+### Visualization Gallery
+
+| Visualization | Purpose |
+| --- | --- |
+| **AI Operations Console** | Demonstrates how AI-assisted operational tooling can interact with observability platforms and production telemetry safely. |
+| **Transactional Outbox Simulator** | Visualizes reliable event publication flows, asynchronous recovery, and eventual consistency guarantees. |
+| **UML Use Case Sandbox** | Models secure operational boundaries, MCP workflows, and distributed platform interactions. |
+| **Distributed Sequence Flow** | Explains asynchronous event choreography, Kafka propagation, and inter-service communication lifecycles. |
+| **Customer Reliability Console** | Simulates transparency-focused operational dashboards inspired by large-scale customer-centric platforms. |
+| **Grafana Observability Dashboard** | Demonstrates metrics pipelines, infrastructure monitoring, service health, and operational visibility patterns. |
+| **Jaeger Distributed Tracing** | Visualizes end-to-end request tracing across distributed asynchronous services and event-driven workflows. |
+
+---
 
 ## Payment Consistency Saga
 

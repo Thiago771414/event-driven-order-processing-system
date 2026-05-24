@@ -1,0 +1,36 @@
+import { Injectable } from '@nestjs/common';
+import { DbService } from '../db/db.service';
+
+@Injectable()
+export class OrdersRepository {
+  constructor(private readonly db: DbService) {}
+
+  async markProcessed(orderId: string): Promise<void> {
+    await this.db.pool.query(
+      `
+      UPDATE orders
+      SET status = CASE
+            WHEN status = 'created' THEN 'processed'
+            ELSE status
+          END,
+          processed_at = now(),
+          last_error = NULL
+      WHERE id = $1
+        AND status <> 'processed'
+      `,
+      [orderId],
+    );
+  }
+
+  async markFailed(orderId: string, error: string): Promise<void> {
+    await this.db.pool.query(
+      `
+      UPDATE orders
+      SET last_error = $2
+      WHERE id = $1
+        AND status <> 'processed'
+      `,
+      [orderId, error],
+    );
+  }
+}

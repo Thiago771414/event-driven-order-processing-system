@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minishop-outbox-worker
+  labels:
+    app: minishop-outbox-worker
+    app.kubernetes.io/name: minishop-outbox-worker
+    app.kubernetes.io/component: outbox-worker
+    release-track: stable
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minishop-outbox-worker
+      release-track: stable
+  template:
+    metadata:
+      labels:
+        app: minishop-outbox-worker
+        app.kubernetes.io/name: minishop-outbox-worker
+        app.kubernetes.io/component: outbox-worker
+        app.kubernetes.io/version: v1
+        release-track: stable
+    spec:
+      containers:
+        - name: outbox-worker
+          image: minishop-outbox-worker:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: metrics
+              containerPort: 9200
+          env:
+            - name: POSTGRES_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: POSTGRES_URL
+            - name: APP_VERSION
+              value: "v1"
+            - name: DEPLOYMENT_VERSION
+              value: "stable"
+            - name: RELEASE_TRACK
+              value: "stable"
+            - name: CANARY_COHORT
+              value: "control"
+            - name: KAFKA_CLIENT_ID
+              value: "minishop-outbox-worker-v1"
+            - name: KAFKA_BROKER
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: KAFKA_BROKER
+
+            # outbox configs
+            - name: OUTBOX_PUBLISH_INTERVAL_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: OUTBOX_PUBLISH_INTERVAL_MS
+            - name: OUTBOX_BATCH_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: OUTBOX_BATCH_SIZE
+            - name: OUTBOX_LOCK_TTL_SEC
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: OUTBOX_LOCK_TTL_SEC
+            - name: OUTBOX_LOCKER_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: OUTBOX_LOCKER_ID
+            - name: OUTBOX_BASE_BACKOFF_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: OUTBOX_BASE_BACKOFF_MS
+
+            # metrics
+            - name: METRICS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: OUTBOX_METRICS_PORT
+
+            # otel
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: OTEL_EXPORTER_OTLP_ENDPOINT
+            - name: OTEL_SERVICE_NAME
+              value: "minishop-outbox-worker"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.version=$(APP_VERSION),deployment.version=$(DEPLOYMENT_VERSION),release.track=$(RELEASE_TRACK),canary.cohort=$(CANARY_COHORT)"
+            - name: OTEL_TRACES_EXPORTER
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: OTEL_TRACES_EXPORTER
+            - name: OTEL_METRICS_EXPORTER
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: OTEL_METRICS_EXPORTER
+
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 10"]
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

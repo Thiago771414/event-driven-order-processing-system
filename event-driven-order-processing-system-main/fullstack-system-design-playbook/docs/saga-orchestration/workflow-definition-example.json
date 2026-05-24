@@ -1,0 +1,339 @@
+{
+  "name": "minishop_checkout_saga_conceitual",
+  "description": "Exemplo conceitual e didatico inspirado no Netflix Conductor. Este arquivo nao deve ser enviado para um servidor Conductor real sem adaptacao.",
+  "version": 1,
+  "schemaVersion": 2,
+  "ownerEmail": "architecture@minishop.local",
+  "restartable": true,
+  "workflowStatusListenerEnabled": true,
+  "timeoutPolicy": "TIME_OUT_WF",
+  "timeoutSeconds": 3600,
+  "inputParameters": [
+    "orderId",
+    "customerId",
+    "cartId",
+    "paymentMethodId",
+    "correlationId",
+    "idempotencyKey"
+  ],
+  "variables": {
+    "documentationOnly": true,
+    "runtime": "mock"
+  },
+  "tasks": [
+    {
+      "name": "criar_pedido_pendente",
+      "taskReferenceName": "criar_pedido_pendente",
+      "type": "SIMPLE",
+      "description": "Cria o pedido em estado pendente usando uma operacao local idempotente.",
+      "inputParameters": {
+        "orderId": "${workflow.input.orderId}",
+        "customerId": "${workflow.input.customerId}",
+        "cartId": "${workflow.input.cartId}",
+        "correlationId": "${workflow.input.correlationId}",
+        "idempotencyKey": "${workflow.input.idempotencyKey}"
+      },
+      "retryCount": 2,
+      "retryDelaySeconds": 2,
+      "timeoutSeconds": 30
+    },
+    {
+      "name": "autorizar_pagamento",
+      "taskReferenceName": "autorizar_pagamento",
+      "type": "SIMPLE",
+      "description": "Autoriza pagamento no gateway usando uma idempotency key externa.",
+      "inputParameters": {
+        "orderId": "${workflow.input.orderId}",
+        "paymentMethodId": "${workflow.input.paymentMethodId}",
+        "correlationId": "${workflow.input.correlationId}",
+        "idempotencyKey": "${workflow.input.idempotencyKey}"
+      },
+      "retryCount": 3,
+      "retryDelaySeconds": 5,
+      "timeoutSeconds": 45
+    },
+    {
+      "name": "decidir_resultado_pagamento",
+      "taskReferenceName": "decidir_resultado_pagamento",
+      "type": "SWITCH",
+      "description": "Decide se o fluxo continua, verifica o gateway ou cancela o pedido.",
+      "evaluatorType": "value-param",
+      "expression": "paymentStatus",
+      "inputParameters": {
+        "paymentStatus": "${autorizar_pagamento.output.status}"
+      },
+      "decisionCases": {
+        "CONFIRMADO": [
+          {
+            "name": "reservar_estoque",
+            "taskReferenceName": "reservar_estoque",
+            "type": "SIMPLE",
+            "description": "Reserva estoque de forma idempotente para o pedido.",
+            "inputParameters": {
+              "orderId": "${workflow.input.orderId}",
+              "cartId": "${workflow.input.cartId}",
+              "correlationId": "${workflow.input.correlationId}"
+            },
+            "retryCount": 3,
+            "retryDelaySeconds": 3,
+            "timeoutSeconds": 30
+          },
+          {
+            "name": "confirmar_pedido",
+            "taskReferenceName": "confirmar_pedido",
+            "type": "SIMPLE",
+            "description": "Confirma o pedido apos pagamento e estoque.",
+            "inputParameters": {
+              "orderId": "${workflow.input.orderId}",
+              "correlationId": "${workflow.input.correlationId}"
+            },
+            "retryCount": 2,
+            "retryDelaySeconds": 2,
+            "timeoutSeconds": 30
+          },
+          {
+            "name": "decidir_confirmacao_pedido",
+            "taskReferenceName": "decidir_confirmacao_pedido",
+            "type": "SWITCH",
+            "description": "Aplica compensacao se a confirmacao do pedido falhar apos pagamento autorizado.",
+            "evaluatorType": "value-param",
+            "expression": "orderConfirmationStatus",
+            "inputParameters": {
+              "orderConfirmationStatus": "${confirmar_pedido.output.status}"
+            },
+            "decisionCases": {
+              "CONFIRMADO": [
+                {
+                  "name": "publicar_pedido_confirmado",
+                  "taskReferenceName": "publicar_pedido_confirmado",
+                  "type": "SIMPLE",
+                  "description": "Publica evento de pedido confirmado via outbox.",
+                  "inputParameters": {
+                    "orderId": "${workflow.input.orderId}",
+                    "eventType": "PedidoConfirmado",
+                    "correlationId": "${workflow.input.correlationId}"
+                  },
+                  "retryCount": 5,
+                  "retryDelaySeconds": 10,
+                  "timeoutSeconds": 60
+                }
+              ],
+              "FALHOU": [
+                {
+                  "name": "reembolsar_pagamento",
+                  "taskReferenceName": "reembolsar_pagamento",
+                  "type": "SIMPLE",
+                  "description": "Compensa pagamento autorizado quando o pedido nao pode ser confirmado.",
+                  "inputParameters": {
+                    "orderId": "${workflow.input.orderId}",
+                    "paymentReference": "${autorizar_pagamento.output.paymentReference}",
+                    "correlationId": "${workflow.input.correlationId}"
+                  },
+                  "retryCount": 3,
+                  "retryDelaySeconds": 10,
+                  "timeoutSeconds": 60
+                },
+                {
+                  "name": "cancelar_pedido",
+                  "taskReferenceName": "cancelar_pedido",
+                  "type": "SIMPLE",
+                  "description": "Cancela pedido depois da compensacao de pagamento.",
+                  "inputParameters": {
+                    "orderId": "${workflow.input.orderId}",
+                    "reason": "CONFIRMAR_PEDIDO_FALHOU",
+                    "correlationId": "${workflow.input.correlationId}"
+                  },
+                  "retryCount": 2,
+                  "retryDelaySeconds": 2,
+                  "timeoutSeconds": 30
+                },
+                {
+                  "name": "publicar_pedido_cancelado",
+                  "taskReferenceName": "publicar_pedido_cancelado_apos_compensacao",
+                  "type": "SIMPLE",
+                  "description": "Publica evento de pedido cancelado via outbox.",
+                  "inputParameters": {
+                    "orderId": "${workflow.input.orderId}",
+                    "eventType": "PedidoCancelado",
+                    "correlationId": "${workflow.input.correlationId}"
+                  },
+                  "retryCount": 5,
+                  "retryDelaySeconds": 10,
+                  "timeoutSeconds": 60
+                }
+              ]
+            },
+            "defaultCase": [
+              {
+                "name": "enviar_para_DLQ",
+                "taskReferenceName": "enviar_para_DLQ_confirmacao_desconhecida",
+                "type": "SIMPLE",
+                "description": "Isola o workflow para inspecao quando a confirmacao nao tem resultado confiavel.",
+                "inputParameters": {
+                  "orderId": "${workflow.input.orderId}",
+                  "reason": "CONFIRMACAO_DESCONHECIDA",
+                  "correlationId": "${workflow.input.correlationId}"
+                },
+                "retryCount": 0,
+                "timeoutSeconds": 15
+              }
+            ]
+          }
+        ],
+        "DESCONHECIDO": [
+          {
+            "name": "consultar_o_gateway_de_pagamento",
+            "taskReferenceName": "consultar_o_gateway_de_pagamento",
+            "type": "SIMPLE",
+            "description": "Consulta o gateway quando o resultado de pagamento ficou desconhecido.",
+            "inputParameters": {
+              "orderId": "${workflow.input.orderId}",
+              "paymentReference": "${autorizar_pagamento.output.paymentReference}",
+              "correlationId": "${workflow.input.correlationId}"
+            },
+            "retryCount": 5,
+            "retryDelaySeconds": 30,
+            "timeoutSeconds": 60
+          },
+          {
+            "name": "decidir_resultado_gateway",
+            "taskReferenceName": "decidir_resultado_gateway",
+            "type": "SWITCH",
+            "description": "Retoma o fluxo de acordo com a consulta ao gateway.",
+            "evaluatorType": "value-param",
+            "expression": "gatewayPaymentStatus",
+            "inputParameters": {
+              "gatewayPaymentStatus": "${consultar_o_gateway_de_pagamento.output.status}"
+            },
+            "decisionCases": {
+              "CONFIRMADO": [
+                {
+                  "name": "reservar_estoque",
+                  "taskReferenceName": "reservar_estoque_apos_verificacao",
+                  "type": "SIMPLE",
+                  "description": "Reserva estoque depois que o gateway confirma pagamento pendente.",
+                  "inputParameters": {
+                    "orderId": "${workflow.input.orderId}",
+                    "cartId": "${workflow.input.cartId}",
+                    "correlationId": "${workflow.input.correlationId}"
+                  },
+                  "retryCount": 3,
+                  "retryDelaySeconds": 3,
+                  "timeoutSeconds": 30
+                },
+                {
+                  "name": "confirmar_pedido",
+                  "taskReferenceName": "confirmar_pedido_apos_verificacao",
+                  "type": "SIMPLE",
+                  "description": "Confirma pedido depois da verificacao de pagamento.",
+                  "inputParameters": {
+                    "orderId": "${workflow.input.orderId}",
+                    "correlationId": "${workflow.input.correlationId}"
+                  },
+                  "retryCount": 2,
+                  "retryDelaySeconds": 2,
+                  "timeoutSeconds": 30
+                },
+                {
+                  "name": "publicar_pedido_confirmado",
+                  "taskReferenceName": "publicar_pedido_confirmado_apos_verificacao",
+                  "type": "SIMPLE",
+                  "description": "Publica confirmacao apos consulta ao gateway.",
+                  "inputParameters": {
+                    "orderId": "${workflow.input.orderId}",
+                    "eventType": "PedidoConfirmado",
+                    "correlationId": "${workflow.input.correlationId}"
+                  },
+                  "retryCount": 5,
+                  "retryDelaySeconds": 10,
+                  "timeoutSeconds": 60
+                }
+              ],
+              "CANCELADO": [
+                {
+                  "name": "cancelar_pedido",
+                  "taskReferenceName": "cancelar_pedido_pagamento_cancelado",
+                  "type": "SIMPLE",
+                  "description": "Cancela pedido quando o gateway informa pagamento cancelado.",
+                  "inputParameters": {
+                    "orderId": "${workflow.input.orderId}",
+                    "reason": "PAGAMENTO_CANCELADO",
+                    "correlationId": "${workflow.input.correlationId}"
+                  },
+                  "retryCount": 2,
+                  "retryDelaySeconds": 2,
+                  "timeoutSeconds": 30
+                }
+              ]
+            },
+            "defaultCase": [
+              {
+                "name": "enviar_para_DLQ",
+                "taskReferenceName": "enviar_para_DLQ_pagamento_desconhecido",
+                "type": "SIMPLE",
+                "description": "Encaminha pagamento sem conclusao para fila operacional.",
+                "inputParameters": {
+                  "orderId": "${workflow.input.orderId}",
+                  "reason": "PAGAMENTO_DESCONHECIDO",
+                  "correlationId": "${workflow.input.correlationId}"
+                },
+                "retryCount": 0,
+                "timeoutSeconds": 15
+              }
+            ]
+          }
+        ],
+        "FALHOU": [
+          {
+            "name": "cancelar_pedido",
+            "taskReferenceName": "cancelar_pedido_pagamento_falhou",
+            "type": "SIMPLE",
+            "description": "Cancela pedido quando a autorizacao de pagamento falha de forma conhecida.",
+            "inputParameters": {
+              "orderId": "${workflow.input.orderId}",
+              "reason": "PAGAMENTO_FALHOU",
+              "correlationId": "${workflow.input.correlationId}"
+            },
+            "retryCount": 2,
+            "retryDelaySeconds": 2,
+            "timeoutSeconds": 30
+          },
+          {
+            "name": "publicar_pedido_cancelado",
+            "taskReferenceName": "publicar_pedido_cancelado_pagamento_falhou",
+            "type": "SIMPLE",
+            "description": "Publica cancelamento quando o pagamento falha.",
+            "inputParameters": {
+              "orderId": "${workflow.input.orderId}",
+              "eventType": "PedidoCancelado",
+              "correlationId": "${workflow.input.correlationId}"
+            },
+            "retryCount": 5,
+            "retryDelaySeconds": 10,
+            "timeoutSeconds": 60
+          }
+        ]
+      },
+      "defaultCase": [
+        {
+          "name": "enviar_para_DLQ",
+          "taskReferenceName": "enviar_para_DLQ_resultado_pagamento_invalido",
+          "type": "SIMPLE",
+          "description": "Isola workflows com resultado de pagamento inesperado.",
+          "inputParameters": {
+            "orderId": "${workflow.input.orderId}",
+            "reason": "RESULTADO_PAGAMENTO_INVALIDO",
+            "correlationId": "${workflow.input.correlationId}"
+          },
+          "retryCount": 0,
+          "timeoutSeconds": 15
+        }
+      ]
+    }
+  ],
+  "outputParameters": {
+    "orderId": "${workflow.input.orderId}",
+    "correlationId": "${workflow.input.correlationId}",
+    "documentationOnly": true
+  }
+}

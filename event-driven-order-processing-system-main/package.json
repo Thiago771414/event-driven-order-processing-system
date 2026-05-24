@@ -1,0 +1,27 @@
+{
+  "name": "minishop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm -r dev",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml down -v",
+    "infra:logs": "docker compose -f infra/docker-compose.yml logs -f",
+    "db:migrate": "docker compose -f infra/docker-compose.yml exec -T postgres psql -U postgres -d minishop -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/apply-all.psql"
+  },
+  "pnpm": {
+    "overrides": {
+      "lru-cache": "^10.4.3"
+    }
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.68.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.210.0",
+    "@opentelemetry/sdk-node": "^0.210.0",
+    "@opentelemetry/sdk-trace-base": "^2.4.0",
+    "prom-client": "^15.1.3"
+  }
+}

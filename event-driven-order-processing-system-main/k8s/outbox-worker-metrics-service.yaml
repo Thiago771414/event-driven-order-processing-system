@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: minishop-outbox-worker-metrics
+  labels:
+    app: minishop-outbox-worker
+    app.kubernetes.io/name: minishop-outbox-worker
+    app.kubernetes.io/component: outbox-worker
+    release-track: stable
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "9200"
+spec:
+  selector:
+    app: minishop-outbox-worker
+    release-track: stable
+  ports:
+    - name: metrics
+      port: 9200
+      targetPort: metrics
+  type: ClusterIP

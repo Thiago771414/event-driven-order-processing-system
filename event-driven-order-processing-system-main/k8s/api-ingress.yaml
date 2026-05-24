@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minishop-api
+  labels:
+    app: minishop-api
+    app.kubernetes.io/name: minishop-api
+    app.kubernetes.io/component: api
+    release-track: stable
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: minishop.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minishop-api
+                port:
+                  name: http

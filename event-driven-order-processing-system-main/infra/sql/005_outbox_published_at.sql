@@ -1,0 +1,2 @@
+ALTER TABLE outbox_events
+  ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ NULL;

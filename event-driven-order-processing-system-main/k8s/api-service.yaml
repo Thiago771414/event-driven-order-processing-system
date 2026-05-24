@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: minishop-api
+  labels:
+    app: minishop-api
+    app.kubernetes.io/name: minishop-api
+    app.kubernetes.io/component: api
+    release-track: stable
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "3000"
+spec:
+  selector:
+    app: minishop-api
+    release-track: stable
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+  type: ClusterIP

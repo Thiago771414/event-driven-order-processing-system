@@ -1,0 +1,6 @@
+\i /docker-entrypoint-initdb.d/001_outbox.sql
+\i /docker-entrypoint-initdb.d/002_outbox_locking.sql
+\i /docker-entrypoint-initdb.d/003_orders_worker_fields.sql
+\i /docker-entrypoint-initdb.d/003_outbox_partition_key.sql
+\i /docker-entrypoint-initdb.d/004_payment_consistency.sql
+\i /docker-entrypoint-initdb.d/005_outbox_published_at.sql

@@ -470,8 +470,8 @@ The architecture is partitioned into decoupled, specialized subsystems. Each com
 The ingress engine of the architecture, responsible for client communication and command parsing.
 *   **Edge Capabilities:** Exposes public REST boundaries (e.g., `POST /orders`), executes upfront payload validation, and injects structural metadata (`correlationId`) for distributed tracking.
 *   **Storage Boundaries:** Persists core domain states and writes corresponding transaction events directly to the outbox repository.
-*   > [!IMPORTANT]
-    > **Zero Broker Coupling:** To preserve low latency and high availability, the API layer has no network dependencies on Apache Kafka and never publishes events directly to the message mesh.
+  > [!IMPORTANT]
+  > **Zero Broker Coupling:** To preserve low latency and high availability, the API layer has no network dependencies on Apache Kafka and never publishes events directly to the message mesh.
 
 #### Outbox Orchestrator Worker
 An independent background process dedicated exclusively to bridging the relational database state with the distributed streaming backbone.

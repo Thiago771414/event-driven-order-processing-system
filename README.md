@@ -158,7 +158,7 @@ The repository includes a complete operational demo showcasing Kafka event strea
 
 This repository evolved beyond a traditional backend API implementation and became a **distributed systems experimentation platform** focused on reliability engineering, operational transparency, and event-driven architecture simulations.
 
-Inspired by engineering principles from Uber, Stripe, Netflix, Mercado Libre, and modern cloud-native platform teams, the project provides interactive environments to study how large-scale systems behave under real operational pressure.
+Inspired by engineering principles from Uber, Stripe, Netflix, and modern cloud-native platform teams, the project provides interactive environments to study how large-scale systems behave under real operational pressure.
 
 The primary goal is not only to build features, but to simulate how resilient architectures handle:
 
@@ -787,7 +787,6 @@ flowchart TB
 
 > [!TIP]
 > **Continuous Quality Signal:** All tests can be executed seamlessly inside isolated containers to replicate production behaviors, ensuring that code changes never impact the **Exactly-Once processing** or **Transactional Outbox** guarantees.
-Por que essa reestruturação ficou sênior:Categorização da Stack: Em vez de uma lista crua de tecnologias, dividi-las por responsabilidades (Application Frameworks, Data, Event Mesh...) demonstra que você entende o papel exato de cada ferramenta na engrenagem.Pirâmide/Fluxo de Testes: O pequeno diagrama em formato texto explica a abrangência da sua suíte de testes de forma muito visual e clara.Uso do Redpanda: Destacar que você utiliza o Redpanda (uma alternativa moderna e rápida ao Kafka tradicional) demonstra que você está atualizado com as tendências de mercado de Cloud Native.Agora que passamos por praticamente todas as seções do seu repositório, você gostaria que eu gerasse o Sumário Executivo (Table of Contents) clicável para colocar no topo do seu README e finalizar a organização do portfólio?
 
 ## Model Context Protocol (MCP) & Operational Intelligence Gateway
 

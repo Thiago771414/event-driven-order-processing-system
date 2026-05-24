@@ -69,9 +69,35 @@ MiniShop completely isolates the ingress boundaries from downstream asynchronous
 
 The repository now includes interactive architecture labs and distributed systems simulators for educational and operational experimentation. These environments visually map the boundaries between event-driven architecture, AI-assisted operations, secure operational gateways for MCP, reliability engineering, distributed tracing, eventual consistency, transactional outbox, and customer reliability engineering.
 
-```text
-[ Client Request ]│▼┌───────────────────────┐│    Ingress API Gate   │└───────────────────────┘│▼ (Atomic ACID Commit)┌───────────────────────┐│ PostgreSQL DB Engine  │ ──> [ Outbox Events Ledger ]└───────────────────────┘                  │▼ (Asynchronous Polling)┌───────────────────────┐│ Outbox Publisher Node │└───────────────────────┘│▼ (Partitioned Stream)┌───────────────────────┐│   Apache Kafka Mesh   │└───────────────────────┘│▼ (Dynamic KEDA Auto-Scaling)┌───────────────────────┐│ Asynchronous Consumers│ ──> [ Redis Idempotency Lock ]└───────────────────────┘
+```mermaid
+flowchart TD
+
+    A[Client Request]
+    --> B[Ingress API Gateway]
+
+    subgraph Persistence Layer
+        C[(PostgreSQL DB Engine)]
+        D[Outbox Events Ledger]
+    end
+
+    subgraph Messaging Layer
+        E[Outbox Publisher Node]
+        F[Apache Kafka Mesh]
+    end
+
+    subgraph Processing Layer
+        G[Asynchronous Consumers]
+        H[Redis Idempotency Lock]
+    end
+
+    B -->|Atomic ACID Commit| C
+    C --> D
+    D -->|Asynchronous Polling| E
+    E -->|Partitioned Stream| F
+    F -->|Dynamic KEDA Auto-Scaling| G
+    G --> H
 ```
+
 ### Technical Resolution Framework:
 *   **Local State Lock:** The API layer persists business entity schemas and respective outbound event objects concurrently into PostgreSQL within a single local transaction block.
 *   **Reliable Relaying:** A decoupled background Outbox Worker extracts rows sequentially from the event tables and pushes them cleanly into Kafka, ensuring eventual consistency targets.

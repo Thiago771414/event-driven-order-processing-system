@@ -112,9 +112,9 @@ Explore our live interactive environments engineered for distributed systems sim
 
 | Playground | Description | URL |
 |---|---|---|
-| **Fullstack Systems Design Manual** | Interactive frontend architecture lab for distributed systems patterns, AI Ops workflows, observability, and resilience simulations. | [🌐 Open Lab](https://eventual-consistency-simulator-451663135116.us-west1.run.app/) |
-| **UML Use Case Sandbox** | Interactive UML use case playground demonstrating secure operational boundaries for MCP, observability workflows, and AI operational assistants. | [🌐 Open Sandbox](https://api-gateway-sandbox-690799752664.us-east1.run.app/) |
-| **UML Sequence Simulator** | Distributed sequence diagram simulator visualizing Transactional Outbox, Kafka event streaming, eventual consistency, and asynchronous processing. | [🌐 Open Simulator](https://eventual-consistency-simulator-451663135116.us-west1.run.app/) |
+| **Fullstack Systems Design Manual** | Interactive frontend architecture lab for distributed systems patterns, AI Ops workflows, observability, and resilience simulations. | [Open Lab](https://eventual-consistency-simulator-451663135116.us-west1.run.app/) |
+| **UML Use Case Sandbox** | Interactive UML use case playground demonstrating secure operational boundaries for MCP, observability workflows, and AI operational assistants. | [Open Sandbox](https://api-gateway-sandbox-690799752664.us-east1.run.app/) |
+| **UML Sequence Simulator** | Distributed sequence diagram simulator visualizing Transactional Outbox, Kafka event streaming, eventual consistency, and asynchronous processing. | [Open Simulator](https://eventual-consistency-simulator-451663135116.us-west1.run.app/) |
 
 ### Playground Previews & UML Architectures
 
@@ -122,8 +122,8 @@ Explore our live interactive environments engineered for distributed systems sim
 
 | UML Use Cases & Flow | Distributed Sequence Simulator | System Observability Console |
 | :---: | :---: | :---: |
-| <a href="https://github.com"><img src="https://github.com" width="260" alt="UML Use Case 1"></a> | <a href="https://github.com"><img src="https://github.com" width="260" alt="UML Sequence 1"></a> | <a href="https://github.com"><img src="https://github.com" width="260" alt="Observability Console"></a> |
-| <a href="https://github.com"><img src="https://github.com" width="260" alt="UML Architecture"></a> | <a href="https://github.com"><img src="https://github.com" width="260" alt="Distributed Flow"></a> | <a href="https://github.com"><img src="https://github.com" width="260" alt="Metrics Dashboard"></a> |
+| <a href="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(1).jpeg"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(1).jpeg" width="260" alt="UML Use Case 1"></a> | <a href="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(1).png"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(1).png" width="260" alt="UML Sequence 1"></a> | <a href="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(2).png"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(2).png" width="260" alt="Observability Console"></a> |
+| <a href="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(3).png"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(3).png" width="260" alt="UML Architecture"></a> | <a href="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(4).png"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(4).png" width="260" alt="Distributed Flow"></a> | <a href="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(5).png"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(5).png" width="260" alt="Metrics Dashboard"></a> |
 
 *Click on any preview thumbnail above to expand the high-resolution architectural blueprint.*
 

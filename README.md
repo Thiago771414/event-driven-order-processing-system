@@ -117,17 +117,6 @@ This decoupled blueprint provides enterprise stability, high availability, and o
 | **Logistics & Real-Time Tracking** | Out-of-order state tracking | Group partition key routing tied strictly to unique entity IDs. | Exact FIFO sequential event delivery for high-precision auditing. |
 | **Platform Observability (SRE)** | High telemetry noise | Distributed tracing correlation IDs paired with secure MCP AI analysis. | Accelerated Mean-Time-To-Resolution (MTTR) during critical live incidents. |
 
-## High-Volume Business Value Matrix
-
-This decoupled blueprint provides enterprise stability, high availability, and operational protection across critical transactional industry verticals.
-
-| Operational Vertical | Core System Threat | Architecture Mitigation Value | Business Impact |
-| :--- | :--- | :--- | :--- |
-| **E-Commerce & Checkout** | Concurrency checkout peaks | Isolation of order captures from intensive ledger calculations. | Reduced cart abandonment rates under massive event surges. |
-| **Payment Ledger Processing** | Network transaction failures | Asynchronous retry loop execution with background DLQ fallback routing. | Elimination of phantom double-charges and missed account reconciliations. |
-| **Logistics & Real-Time Tracking** | Out-of-order state tracking | Group partition key routing tied strictly to unique entity IDs. | Exact FIFO sequential event delivery for high-precision auditing. |
-| **Platform Observability (SRE)** | High telemetry noise | Distributed tracing correlation IDs paired with secure MCP AI analysis. | Accelerated Mean-Time-To-Resolution (MTTR) during critical live incidents. |
-
 ---
 
 ## Interactive Architecture Labs & Playgrounds
@@ -612,8 +601,34 @@ Operational dashboards are versioned directly within the codebase infrastructure
 To debug distributed transactions across asynchronous event boundaries, the architecture utilizes OpenTelemetry context propagation.
 
 *   **Jaeger UI Web Console:** `http://localhost:16686`
-```text
-[ Client Request ] ── (HTTP Context) ──> [ API Ingress ]│▼ (Trace Context Injection)[ Apache Kafka ]│▼ (Trace Context Extraction)[ Domain Worker ] ──> [ PostgreSQL ]
+```mermaid
+flowchart TD
+
+    A[Client Request]
+
+    subgraph Edge Layer
+        B[API Ingress]
+    end
+
+    subgraph Streaming Layer
+        C[Apache Kafka Event Mesh]
+    end
+
+    subgraph Processing Layer
+        D[Domain Worker]
+    end
+
+    subgraph Persistence Layer
+        E[(PostgreSQL)]
+    end
+
+    A -->|HTTP Context| B
+
+    B -->|Trace Context Injection| C
+
+    C -->|Trace Context Extraction| D
+
+    D -->|Transactional Persistence| E
 ```
 
 > [!TIP]
@@ -623,10 +638,26 @@ To debug distributed transactions across asynchronous event boundaries, the arch
 
 The architecture now supports standard Cloud-Native **Canary Release** strategies for the API layer. This enables safe, incremental traffic routing to newer versions before full-scale production deployment.
 
-```text
-┌─── [ Ingress NGINX Router ] ───┐│                                │(90% Traffic) ▼                                ▼ (10% Traffic)┌───────────────────────┐                    ┌───────────────────────┐│     API v1.0.0        │                    │     API v1.1.0        ││   Stable (Production) │                    │    Canary (Testing)   │└───────────────────────┘                    └───────────────────────┘
+```mermaid
+flowchart TD
 
+    subgraph Edge Layer
+        A[Ingress NGINX Router]
+    end
+
+    subgraph Stable Environment
+        B[API v1.0.0<br/>Stable Production]
+    end
+
+    subgraph Canary Environment
+        C[API v1.1.0<br/>Canary Testing]
+    end
+
+    A -->|90% Production Traffic| B
+
+    A -->|10% Canary Traffic| C
 ```
+
 ### Infrastructure & Canary Verification Stack
 
 The deployment pipeline automates traffic splitting and operational safety using the following ecosystem components:
@@ -663,10 +694,36 @@ The project ecosystem is built using industry-proven, high-throughput technologi
 
 To guarantee system integrity, data atomicity, and event convergence across asynchronous boundaries, the architecture enforces a strict multi-layered testing strategy.
 
-```text
-┌────────────────────────────────────────────────────────┐│               E2E / Integration Tests                  │  <-- Validates HTTP Gateway, Auth,│          (httptest / Request Lifecycle)                │      Kafka contracts & DB persistence└────────────────────────────────────────────────────────┘┌────────────────────────────────────┐│            Unit Tests              │  <-- Validates UseCases, State Machine,│       (Isolated Domain Logic)      │      Payment Strategies & Business Rules└────────────────────────────────────┘
+```mermaid
+flowchart TB
 
+    subgraph Platform Reliability Tests
+        A[E2E / Integration Tests]
+        A1[HTTP Gateway]
+        A2[Authentication]
+        A3[Kafka Contracts]
+        A4[Database Persistence]
+    end
+
+    subgraph Domain Reliability Tests
+        B[Unit Tests]
+        B1[Use Cases]
+        B2[State Machine]
+        B3[Payment Strategies]
+        B4[Business Rules]
+    end
+
+    A --> A1
+    A --> A2
+    A --> A3
+    A --> A4
+
+    B --> B1
+    B --> B2
+    B --> B3
+    B --> B4
 ```
+
 ### 1. Unit Testing (Domain Isolation)
 *   **Objective:** Validates pure business domain rules without database or network I/O dependencies.
 *   **Core Targets:** Focuses heavily on the `CreateOrderUseCase` and the `Order` state machine. It ensures correct status transitions (`PENDING` ➡️ `CONFIRMED` / `FAILED`) under various simulated checkout events.
@@ -685,10 +742,36 @@ Por que essa reestruturação ficou sênior:Categorização da Stack: Em vez de 
 
 The architecture integrates a secure **Model Context Protocol (MCP)** abstraction layer. This is not a generic "chatbot interface"—it functions as an enterprise-grade **AI Reliability Copilot & Operational Intelligence Layer** designed to bridge the gap between raw cloud-native telemetry and high-level incident response decision-making.
 
-```text
-[ Operator / Human ] ── (Natural Language Request) ──> [ Secure MCP Gateway ]│┌─────────┴─────────┐▼                   ▼(Enforces Guardrails) (Translates Intent)│                   │▼                   ▼[ Sanitize Context ]   [ Query Prometheus ][ Block PII/Secrets]   [ Analyze Kafka Lag]
+```mermaid
+flowchart TD
 
+    A[Operator / Human]
+
+    subgraph AI Operations Layer
+        B[Secure MCP Gateway]
+    end
+
+    subgraph Security & Compliance Layer
+        C[Sanitize Context]
+        E[Block PII / Secrets]
+    end
+
+    subgraph Observability Intelligence Layer
+        D[Query Prometheus]
+        F[Analyze Kafka Lag]
+    end
+
+    A -->|Natural Language Request| B
+
+    B -->|Enforces Guardrails| C
+
+    B -->|Intent Translation| D
+
+    C --> E
+
+    D --> F
 ```
+
 ### Core Capabilities & Operational Value
 
 *   **Telemetry-to-Intent Translation:** Automatically converts abstract human operational queries (e.g., *"Is the checkout pipeline degrading?"*) into deterministic analytical telemetry validations—evaluating P95 latency histograms, Kafka consumer lag thresholds, event loop saturation, and active retry rates.

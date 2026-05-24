@@ -1,0 +1,9 @@
+ALTER TABLE outbox_events
+  ADD COLUMN IF NOT EXISTS locked_at TIMESTAMPTZ NULL,
+  ADD COLUMN IF NOT EXISTS locked_by TEXT NULL,
+  ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS max_attempts INT NOT NULL DEFAULT 20;
+
+CREATE INDEX IF NOT EXISTS idx_outbox_ready
+  ON outbox_events (next_attempt_at)
+  WHERE sent_at IS NULL;

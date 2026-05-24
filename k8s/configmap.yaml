@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minishop-config
+data:
+  API_PORT: "3000"
+
+  # Metrics servers (no host network, inside pods they bind to container port)
+  WORKER_METRICS_PORT: "9100"
+  OUTBOX_METRICS_PORT: "9200"
+
+  # Infra endpoints (EXTERNAL)
+  POSTGRES_URL: "postgresql://minishop:minishop@postgres.default.svc.cluster.local:5432/minishop"
+  REDIS_URL: "redis://redis.default.svc.cluster.local:6379"
+  KAFKA_BROKER: "kafka.default.svc.cluster.local:9092"
+
+  # Outbox configs
+  OUTBOX_PUBLISH_INTERVAL_MS: "1000"
+  OUTBOX_BATCH_SIZE: "20"
+  OUTBOX_LOCK_TTL_SEC: "30"
+  OUTBOX_LOCKER_ID: "outbox-worker-1"
+  OUTBOX_BASE_BACKOFF_MS: "500"
+
+  # OTEL
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.default.svc.cluster.local:4318/v1/traces"
+  OTEL_TRACES_EXPORTER: "otlp"
+  OTEL_METRICS_EXPORTER: "none"

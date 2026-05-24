@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minishop-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minishop-worker
+  template:
+    metadata:
+      labels:
+        app: minishop-worker
+    spec:
+      containers:
+        - name: worker
+          image: minishop-worker:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9100
+          env:
+            - name: POSTGRES_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: POSTGRES_URL
+            - name: KAFKA_BROKER
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: KAFKA_BROKER
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: REDIS_URL
+
+            # metrics
+            - name: METRICS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: WORKER_METRICS_PORT
+
+            # otel
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: OTEL_EXPORTER_OTLP_ENDPOINT
+            - name: OTEL_SERVICE_NAME
+              value: "minishop-worker"
+            - name: OTEL_TRACES_EXPORTER
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: OTEL_TRACES_EXPORTER
+            - name: OTEL_METRICS_EXPORTER
+              valueFrom:
+                configMapKeyRef:
+                  name: minishop-config
+                  key: OTEL_METRICS_EXPORTER
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

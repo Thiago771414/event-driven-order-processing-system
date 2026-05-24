@@ -23,7 +23,7 @@
 ![Tests](https://img.shields.io/badge/Tests-Automated-green)
 ![Reliability](https://img.shields.io/badge/System-Reliability-critical)
 
-# 🛒 MiniShop — Distributed Event-Driven Architecture
+# MiniShop — Distributed Event-Driven Architecture
 
 **MiniShop** is an enterprise-grade, high-throughput distributed ecosystem engineered to demonstrate how modern hyper-scale platforms orchestrate resilient asynchronous transaction pipelines.
 
@@ -91,10 +91,9 @@ This decoupled blueprint provides enterprise stability, high availability, and o
 | **Logistics & Real-Time Tracking** | Out-of-order state tracking | Group partition key routing tied strictly to unique entity IDs. | Exact FIFO sequential event delivery for high-precision auditing. |
 | **Platform Observability (SRE)** | High telemetry noise | Distributed tracing correlation IDs paired with secure MCP AI analysis. | Accelerated Mean-Time-To-Resolution (MTTR) during critical live incidents. |
 
-## 📈 High-Volume Business Value Matrix
+## High-Volume Business Value Matrix
 
 This decoupled blueprint provides enterprise stability, high availability, and operational protection across critical transactional industry verticals.
-
 
 | Operational Vertical | Core System Threat | Architecture Mitigation Value | Business Impact |
 | :--- | :--- | :--- | :--- |
@@ -105,29 +104,28 @@ This decoupled blueprint provides enterprise stability, high availability, and o
 
 ---
 
-## 🔬 Interactive Architecture Labs & Playgrounds
+## Interactive Architecture Labs & Playgrounds
 
-Explore our live interactive environments engineered for distributed systems simulation and architecture experimentation.
-
-
-| Playground | Description | URL |
-|---|---|---|
-| **Fullstack Systems Design Manual** | Interactive frontend architecture lab for distributed systems patterns, AI Ops workflows, observability, and resilience simulations. | [Open Lab](https://eventual-consistency-simulator-451663135116.us-west1.run.app/) |
-| **UML Use Case Sandbox** | Interactive UML use case playground demonstrating secure operational boundaries for MCP, observability workflows, and AI operational assistants. | [Open Sandbox](https://api-gateway-sandbox-690799752664.us-east1.run.app/) |
-| **UML Sequence Simulator** | Distributed sequence diagram simulator visualizing Transactional Outbox, Kafka event streaming, eventual consistency, and asynchronous processing. | [Open Simulator](https://eventual-consistency-simulator-451663135116.us-west1.run.app/) |
-
-### Playground Previews & UML Architectures
+## Playground Previews & UML Architectures
 
 <div align="center">
 
-| UML Use Cases & Flow | Distributed Sequence Simulator | System Observability Console |
-| :---: | :---: | :---: |
-| <a href="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(1).jpeg"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(1).jpeg" width="260" alt="UML Use Case 1"></a> | <a href="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(1).png"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(1).png" width="260" alt="UML Sequence 1"></a> | <a href="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(2).png"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(2).png" width="260" alt="Observability Console"></a> |
-| <a href="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(3).png"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(3).png" width="260" alt="UML Architecture"></a> | <a href="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(4).png"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(4).png" width="260" alt="Distributed Flow"></a> | <a href="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(5).png"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(5).png" width="260" alt="Metrics Dashboard"></a> |
-
-*Click on any preview thumbnail above to expand the high-resolution architectural blueprint.*
+| Preview | Playground | Description | Access |
+| :---: | --- | --- | :---: |
+| <a href="https://eventual-consistency-simulator-451663135116.us-west1.run.app/"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(1).jpeg" width="260" alt="Fullstack Systems Design Manual"></a> | **Fullstack Systems Design Manual** | Interactive frontend architecture lab for distributed systems patterns, AI Ops workflows, observability, resilience simulations, and event-driven system design. | <a href="https://eventual-consistency-simulator-451663135116.us-west1.run.app/">Open Lab</a> |
+| <a href="https://api-gateway-sandbox-690799752664.us-east1.run.app/"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(1).png" width="260" alt="UML Use Case Sandbox"></a> | **UML Use Case Sandbox** | Interactive UML playground demonstrating secure operational boundaries for MCP workflows, observability pipelines, and AI operational assistants. | <a href="https://api-gateway-sandbox-690799752664.us-east1.run.app/">Open Sandbox</a> |
+| <a href="https://eventual-consistency-simulator-451663135116.us-west1.run.app/"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(2).png" width="260" alt="UML Sequence Simulator"></a> | **UML Sequence Simulator** | Distributed sequence simulator visualizing Transactional Outbox, Kafka event streaming, eventual consistency, retries, DLQ, and asynchronous workflows. | <a href="https://eventual-consistency-simulator-451663135116.us-west1.run.app/">Open Simulator</a> |
+| <a href="https://eventual-consistency-simulator-451663135116.us-west1.run.app/"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(3).png" width="260" alt="Distributed Architecture"></a> | **Distributed Architecture Blueprint** | Architectural visualization covering bounded contexts, distributed orchestration, resilience patterns, and scalable event-driven communication. | <a href="https://eventual-consistency-simulator-451663135116.us-west1.run.app/">Explore Architecture</a> |
+| <a href="https://eventual-consistency-simulator-451663135116.us-west1.run.app/"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(4).png" width="260" alt="Distributed Flow"></a> | **Distributed Flow Simulator** | Interactive distributed flow visualizer for asynchronous processing, observability tracing, event choreography, and transactional reliability. | <a href="https://eventual-consistency-simulator-451663135116.us-west1.run.app/">Open Flow</a> |
+| <a href="https://eventual-consistency-simulator-451663135116.us-west1.run.app/"><img src="https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/uml%20(5).png" width="260" alt="Metrics Dashboard"></a> | **Metrics & Observability Dashboard** | Operational dashboard preview demonstrating metrics pipelines, distributed tracing, monitoring strategies, and AI Ops visibility. | <a href="https://eventual-consistency-simulator-451663135116.us-west1.run.app/">Open Dashboard</a> |
 
 </div>
+
+---
+
+<p align="center">
+<i>Click any architectural preview to open the interactive engineering playground.</i>
+</p>
 
 ---
 

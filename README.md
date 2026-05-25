@@ -407,7 +407,7 @@ The architecture incorporates corporate-grade resilience patterns to handle netw
 
 Modern distributed systems are no longer evaluated only by uptime, latency, or throughput.
 
-Large-scale platform companies such as Uber, Stripe, Amazon, Mercado Libre, and Nubank discovered that operational excellence alone is insufficient if customers experience uncertainty, silence, or unpredictability during critical workflows.
+Large-scale platform companies such as Uber, Stripe discovered that operational excellence alone is insufficient if customers experience uncertainty, silence, or unpredictability during critical workflows.
 
 This project introduces a dedicated **Trust & Experience Reliability Layer** designed to transform internal operational telemetry into customer-facing confidence signals.
 
@@ -512,11 +512,6 @@ Payment states such as:
 - succeeded
 
 provide transparency throughout the transaction lifecycle.
-
-### Mercado Libre
-Logistics workflows continuously expose shipment state transitions, delays, and updated delivery predictions.
-
-The same philosophy is applied here to distributed systems architecture.
 
 ---
 

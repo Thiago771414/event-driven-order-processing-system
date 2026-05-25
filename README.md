@@ -258,7 +258,7 @@ flowchart TD
 > [!IMPORTANT]
 > ### Architectural Resilience: Transactional Outbox & Orchestrated Saga
 > 
-> In highly concurrent event-driven architectures, network partitioning and database failures are inevitable. The **EventMaster** addresses these distributed systems challenges through strict patterns:
+> In highly concurrent event-driven architectures, network partitioning and database failures are inevitable. The **mini-shop** addresses these distributed systems challenges through strict patterns:
 > 
 > *   **Atomicity via Transactional Outbox:** An API should never emit a message to an external broker (like Kafka) inside an active database transaction. If the transaction fails, a ghost message is sent; if the broker fails, the database rollback leaves the system inconsistent. By persisting `orders`, `payments`, and `outbox_events` in a single Postgres transaction, we guarantee **Exactly-Once processing** boundaries locally.
 > *   **Reliability via Orchestrated Saga:** Payment networks often suffer from unpredictable timeouts and transient errors. Instead of blocking the client request (critical path), any inconclusive transaction is offloaded to a background **Verification Worker**. This asynchronous orchestration ensures optimal checkout throughput while maintaining data consistency.

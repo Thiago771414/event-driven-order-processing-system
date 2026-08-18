@@ -1,5 +1,7 @@
 ## MiniShop — Event-Driven Distributed Architecture
 
+[![CI](https://github.com/Thiago771414/order-checkout-platform-clean-architecture/actions/workflows/ci.yml/badge.svg)](https://github.com/Thiago771414/order-checkout-platform-clean-architecture/actions/workflows/ci.yml)
+
 ![Architecture](https://img.shields.io/badge/Architecture-Event%20Driven-orange)
 ![Messaging](https://img.shields.io/badge/Messaging-Kafka-red)
 ![Pattern](https://img.shields.io/badge/Pattern-Outbox%20Pattern-blue)
@@ -29,8 +31,8 @@
 
 <div align="center">
 
-![MiniShop — Distributed Architecture Topology (Kubernetes + KEDA)](https://raw.githubusercontent.com/Thiago771414/imagensProjetos/main/slices/mobile/kubernetsKeda.png)
-*Figure 1: End-to-End Enterprise Kubernetes Topography featuring KEDA, Transactional Outbox Workers, and OpenTelemetry Diagnostics*
+![MiniShop — Distributed Architecture Topology (Kubernetes + KEDA)](https://raw.githubusercontent.com/Thiago771414/imagensProjetos/blob/main/slices/mobile/netflixConductor2.png)
+*Figure 1: End-to-End Enterprise Kubernetes Topology featuring KEDA Autoscaling, Transactional Outbox, Kafka Event Streaming, Netflix Conductor Saga Orchestration, and Full-Stack Observability.*
 
 </div>
 

@@ -31,7 +31,7 @@
 
 <div align="center">
 
-![MiniShop — Distributed Architecture Topology (Kubernetes + KEDA)](https://raw.githubusercontent.com/Thiago771414/imagensProjetos/blob/main/slices/mobile/netflixConductor2.png)
+![MiniShop — Distributed Architecture Topology (Kubernetes + KEDA)](https://github.com/Thiago771414/imagensProjetos/blob/main/slices/mobile/netflixConductor2.png)
 *Figure 1: End-to-End Enterprise Kubernetes Topology featuring KEDA Autoscaling, Transactional Outbox, Kafka Event Streaming, Netflix Conductor Saga Orchestration, and Full-Stack Observability.*
 
 </div>

@@ -1,6 +1,6 @@
 ## MiniShop — Event-Driven Distributed Architecture
 
-[![CI](https://github.com/Thiago771414/order-checkout-platform-clean-architecture/actions/workflows/ci.yml/badge.svg)](https://github.com/Thiago771414/order-checkout-platform-clean-architecture/actions/workflows/ci.yml)
+[![CI](https://github.com/Thiago771414/event-driven-order-processing-system/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Thiago771414/event-driven-order-processing-system/actions/workflows/ci.yml)
 
 ![Architecture](https://img.shields.io/badge/Architecture-Event%20Driven-orange)
 ![Messaging](https://img.shields.io/badge/Messaging-Kafka-red)

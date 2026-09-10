@@ -851,7 +851,7 @@ The deployment pipeline automates traffic splitting and operational safety using
 > [!TIP]
 > **Blast Radius Mitigation:** By rolling out the new API version to a tiny subset of production traffic, any uncaught edge-case exception is isolated. If the Prometheus telemetry signals a spike in the canary error rate, the system can trigger an immediate automated rollback, reducing the failure impact to near zero.
 
-Documentacao operacional:
+Operational documentation:
 
 ```ts
 docs/canary-release.md

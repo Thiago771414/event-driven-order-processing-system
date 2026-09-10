@@ -1,126 +1,125 @@
-# Arquitetura
+# Architecture
 
-Este documento descreve a arquitetura fullstack por trás do playbook. O
-repositório é uma documentação inspirada em produção, não um sistema de produção
-pronto para deploy.
+This document describes the fullstack architecture behind the playbook. The
+repository provides documentation inspired by production systems, not a production system
+ready for deployment.
 
-## Forma do sistema
+## System Structure
 
-A arquitetura começa em um frontend React e termina em uma execução assíncrona
-observável no backend.
+The architecture starts with a React frontend and ends with observable asynchronous
+execution in the backend.
 
 ```mermaid
 flowchart TD
-  FE[Frontend React] --> Hooks[Hooks / Gerenciamento de Estado]
-  Hooks --> Services[Camada de Serviço]
-  Services --> Client[Cliente de API]
+  FE[React Frontend] --> Hooks[Hooks / State Management]
+  Hooks --> Services[Service Layer]
+  Services --> Client[API Client]
   Client --> API[MiniShop Backend API]
   API --> DB[(PostgreSQL)]
-  API --> Outbox[(Outbox Transacional)]
+  API --> Outbox[(Transactional Outbox)]
   Outbox --> Publisher[Outbox Worker]
   Publisher --> Kafka[(Kafka)]
   Kafka --> Workers[Workers]
   Workers --> Redis[(Redis)]
   Workers --> DB
-  API --> Obs[Observabilidade]
+  API --> Obs[Observability]
   Publisher --> Obs
   Workers --> Obs
 ```
 
-O frontend é dono da interação do usuário. O backend é dono do estado de negócio
-durável. O Kafka conecta mudanças de estado já confirmadas ao processamento
-assíncrono.
+The frontend owns user interaction. The backend owns durable business state.
+Kafka connects committed state changes to asynchronous processing.
 
-## Limites
+## Boundaries
 
-| Limite | Responsabilidade | Não deve fazer |
+| Boundary | Responsibility | Must not do |
 | --- | --- | --- |
-| Componentes React | Renderizar e capturar intenção | Conhecer detalhes internos de Kafka ou banco |
-| Hooks | Coordenar estado de UI e chamadas de serviço | Codificar detalhes de transporte |
-| Camada de serviço | Expressar ações de produto | Recriar HTTP de baixo nível em vários lugares |
-| Cliente de API | Controlar HTTP, cabeçalhos, parsing e erros | Decidir transições de estado de domínio |
-| API | Validar requisições e confirmar estado | Publicar diretamente no Kafka dentro da requisição |
-| PostgreSQL | Guardar a verdade durável | Agir como fila sem disciplina de outbox |
-| Outbox worker | Publicar eventos confirmados | Alterar estado de negócio inesperadamente |
-| Kafka | Mover eventos entre serviços | Substituir armazenamento durável de domínio |
-| Workers | Executar efeitos colaterais assíncronos | Assumir entrega exatamente uma vez |
-| Redis | Cache, locks e idempotência | Virar fonte da verdade |
+| React components | Render and capture intent | Know Kafka or database internals |
+| Hooks | Coordinate UI state and service calls | Hard-code transport details |
+| Service layer | Express product actions | Reimplement low-level HTTP in multiple places |
+| API client | Manage HTTP, headers, parsing, and errors | Decide domain state transitions |
+| API | Validate requests and commit state | Publish directly to Kafka within a request |
+| PostgreSQL | Store durable truth | Act as a queue without following the outbox pattern |
+| Outbox worker | Publish committed events | Change business state unexpectedly |
+| Kafka | Move events between services | Replace durable domain storage |
+| Workers | Execute asynchronous side effects | Assume exactly-once delivery |
+| Redis | Cache, locks, and idempotency | Become the source of truth |
 
-## Ciclo de vida da requisição
+## Request Lifecycle
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant UI as UI React
-  participant SVC as Serviço Frontend
-  participant HTTP as Cliente de API
+  participant UI as React UI
+  participant SVC as Frontend Service
+  participant HTTP as API Client
   participant API as Backend API
   participant PG as PostgreSQL
   participant OB as Outbox Worker
   participant K as Kafka
   participant W as Worker
-  participant O as Observabilidade
+  participant O as Observability
 
-  UI->>SVC: Intenção do usuário
-  SVC->>HTTP: Requisição de domínio
-  HTTP->>API: HTTP com correlation id
-  API->>PG: Inicia transação
-  API->>PG: Grava registro de domínio
-  API->>PG: Grava evento de outbox
+  UI->>SVC: User intent
+  SVC->>HTTP: Domain request
+  HTTP->>API: HTTP with correlation ID
+  API->>PG: Begin transaction
+  API->>PG: Write domain record
+  API->>PG: Write outbox event
   API->>PG: Commit
-  API-->>HTTP: Resposta com status de domínio
-  HTTP-->>SVC: Resultado parseado
-  SVC-->>UI: Estado renderizável
-  OB->>PG: Busca linhas pendentes da outbox
-  OB->>K: Publica evento
-  K->>W: Entrega evento
-  W->>PG: Aplica atualização assíncrona
-  API->>O: Métricas, traces e logs
-  OB->>O: Métricas, traces e logs
-  W->>O: Métricas, traces e logs
+  API-->>HTTP: Response with domain status
+  HTTP-->>SVC: Parsed result
+  SVC-->>UI: Renderable state
+  OB->>PG: Fetch pending outbox rows
+  OB->>K: Publish event
+  K->>W: Deliver event
+  W->>PG: Apply asynchronous update
+  API->>O: Metrics, traces, and logs
+  OB->>O: Metrics, traces, and logs
+  W->>O: Metrics, traces, and logs
 ```
 
-A resposta HTTP não é o fim do fluxo de trabalho. Ela é o ponto em que o frontend recebe
-um identificador estável e um status atual.
+The HTTP response is not the end of the workflow. It is the point at which the frontend receives
+a stable identifier and the current status.
 
-## Fluxo de eventos
+## Event Flow
 
 ```mermaid
 flowchart TD
-  A[API grava pedido] --> B[API grava evento de outbox]
-  B --> C[Transação do banco faz commit]
-  C --> D[Outbox worker lê evento pendente]
-  D --> E[Publica no tópico Kafka]
-  E --> F[Worker consome evento]
-  F --> G{Duplicado?}
-  G -->|Sim| H[Ignora usando registro de idempotência]
-  G -->|Não| I[Processa evento]
-  I --> J{Sucesso?}
-  J -->|Sim| K[Marca processado / atualiza banco]
-  J -->|Falha temporária| L[Retry com backoff]
+  A[API writes order] --> B[API writes outbox event]
+  B --> C[Database transaction commits]
+  C --> D[Outbox worker reads pending event]
+  D --> E[Publish to Kafka topic]
+  E --> F[Worker consumes event]
+  F --> G{Duplicate?}
+  G -->|Yes| H[Skip using idempotency record]
+  G -->|No| I[Process event]
+  I --> J{Success?}
+  J -->|Yes| K[Mark as processed / update database]
+  J -->|Temporary failure| L[Retry with backoff]
   L --> F
-  J -->|Retries esgotados| M[DLQ]
+  J -->|Retries exhausted| M[DLQ]
 ```
 
-## Autoridade dos dados
+## Data Authority
 
-PostgreSQL é a fonte da verdade. Kafka é o log de comunicação para eventos
-confirmados. Redis é usado para aceleração e idempotência. O armazenamento do
-navegador é útil para continuidade da experiência, mas não pode ser tratado como
-autoridade do servidor.
+PostgreSQL is the source of truth. Kafka is the communication log for committed
+events. Redis provides acceleration and idempotency. Browser storage helps
+maintain a continuous user experience, but it cannot be treated as authoritative
+server state.
 
-## Contrato entre frontend e backend
+## Frontend and Backend Contract
 
-O contrato da API deve tornar explícito o comportamento distribuído:
+The API contract should make distributed behavior explicit:
 
-- identificadores estáveis de recursos;
-- valores de status de domínio;
-- comportamento de idempotência;
-- categorias de erro;
-- orientação de retry;
+- stable resource identifiers;
+- domain status values;
+- idempotency behavior;
+- error categories;
+- retry guidance;
 - correlation IDs;
-- semântica de polling ou refresh;
-- expectativas de consistência eventual.
+- polling or refresh semantics;
+- eventual consistency expectations.
 
-A UI nunca deve inferir que o backend terminou apenas porque um loading local
-desapareceu.
+The UI must never infer that the backend has finished simply because a local
+loading indicator has disappeared.

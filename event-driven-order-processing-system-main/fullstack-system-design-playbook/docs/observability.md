@@ -1,14 +1,14 @@
-# Observabilidade
+# Observability
 
-Observabilidade dá aos engenheiros uma forma de responder o que aconteceu entre
-requisições do frontend, transações da API, publicação de outbox, entrega no
-Kafka, execução de workers e atualizações no banco.
+Observability gives engineers a way to understand what happened across
+frontend requests, API transactions, outbox publication, Kafka delivery,
+worker execution, and database updates.
 
-## Sinais
+## Signals
 
 ```mermaid
 flowchart TD
-  FE[Frontend React] --> API[MiniShop API]
+  FE[React Frontend] --> API[MiniShop API]
   API --> DB[(PostgreSQL)]
   API --> OW[Outbox Worker]
   OW --> K[Kafka]
@@ -17,39 +17,39 @@ flowchart TD
   API --> OTEL[OpenTelemetry]
   OW --> OTEL
   W --> OTEL
-  OTEL --> P[Métricas Prometheus]
-  OTEL --> J[Traces Jaeger]
-  API --> L[Logs Estruturados]
+  OTEL --> P[Prometheus Metrics]
+  OTEL --> J[Jaeger Traces]
+  API --> L[Structured Logs]
   OW --> L
   W --> L
-  P --> G[Dashboards Grafana]
+  P --> G[Grafana Dashboards]
 ```
 
-## Métricas
+## Metrics
 
-Métricas devem responder perguntas sobre taxa, latência, erro e saturação.
+Metrics should answer questions about rate, latency, errors, and saturation.
 
-Métricas úteis:
+Useful metrics:
 
-- contagem de requisições HTTP por rota, status e trilha de release;
-- duração de requisições HTTP em p50, p95 e p99;
-- eventos pendentes na outbox;
-- falhas de publicação da outbox;
-- lag da outbox;
-- lag de consumidores Kafka;
-- contagem de processamento de workers;
-- contagem de retries dos workers;
-- contagem de DLQ;
-- contagem de verificação de pagamento por resultado;
-- contagem de reconciliação de pagamento;
-- hits e misses de idempotência no Redis.
+- HTTP request count by route, status, and release track;
+- HTTP request duration at p50, p95, and p99;
+- pending outbox events;
+- outbox publication failures;
+- outbox lag;
+- Kafka consumer lag;
+- worker processing count;
+- worker retry count;
+- DLQ count;
+- payment verification count by outcome;
+- payment reconciliation count;
+- Redis idempotency hits and misses.
 
 ## Traces
 
-Traces devem conectar o caminho da requisição do usuário ao processamento
-assíncrono.
+Traces should connect the user request path to asynchronous
+processing.
 
-Atributos de trace:
+Trace attributes:
 
 - `correlation.id`;
 - `order.id`;
@@ -62,79 +62,79 @@ Atributos de trace:
 - `deployment.version`;
 - `release.track`.
 
-O objetivo é inspecionar um checkout específico e enxergar a transação na API, o
-span de publicação da outbox, a publicação no Kafka, o consumo pelo worker, a
-verificação de pagamento e a atualização no banco.
+The goal is to inspect a specific checkout and see the API transaction,
+the outbox publication span, Kafka publication, worker consumption,
+payment verification, and the database update.
 
 ## Logs
 
-Logs fornecem fatos estruturados. Eles devem ser pesquisáveis e correlacionados.
+Logs provide structured facts. They should be searchable and correlated.
 
-Campos recomendados:
+Recommended fields:
 
 - timestamp;
-- nível;
-- nome do serviço;
-- ambiente;
+- level;
+- service name;
+- environment;
 - correlation ID;
 - order ID;
 - payment ID;
 - event ID;
-- tentativa de retry;
-- código de erro;
-- mensagem.
+- retry attempt;
+- error code;
+- message.
 
-Logs não devem ser a única ferramenta de observabilidade. Eles são mais fortes
-quando combinados com métricas e traces.
+Logs should not be the only observability tool. They are more effective
+when combined with metrics and traces.
 
 ## Prometheus
 
-Prometheus armazena métricas de séries temporais e oferece suporte a regras de
-alerta.
+Prometheus stores time-series metrics and supports alerting
+rules.
 
-Exemplos de condições de alerta:
+Example alert conditions:
 
-- aumento sustentado de HTTP 5xx;
-- lag da outbox acima do limite;
-- contagem de DLQ acima de zero;
-- aumento de falhas de verificação de pagamento;
-- latência p95 do canário maior que a versão estável;
-- pico na taxa de retries dos workers.
+- sustained increase in HTTP 5xx responses;
+- outbox lag above the threshold;
+- DLQ count above zero;
+- increase in payment verification failures;
+- canary p95 latency higher than the stable version;
+- spike in worker retry rate.
 
 ## Grafana
 
-Dashboards do Grafana devem ser organizados por pergunta operacional:
+Grafana dashboards should be organized around operational questions:
 
-- saúde da API;
-- taxas de sucesso e pendência no checkout;
-- lag da outbox;
-- lag de consumidores Kafka;
-- throughput dos workers;
-- verificação de pagamento;
-- DLQ e reprocessamento;
-- comparação entre estável e canário.
+- API health;
+- checkout success and pending rates;
+- outbox lag;
+- Kafka consumer lag;
+- worker throughput;
+- payment verification;
+- DLQ and reprocessing;
+- stable versus canary comparison.
 
 ## Jaeger
 
-Jaeger visualiza traces distribuídos e ajuda a inspecionar o ciclo de vida de
-uma única requisição.
+Jaeger visualizes distributed traces and helps inspect the lifecycle of
+a single request.
 
-Ele é especialmente útil quando o frontend já tem um status, mas o backend ainda
-está processando eventos downstream.
+It is especially useful when the frontend already has a status but the backend
+is still processing downstream events.
 
 ## OpenTelemetry
 
-OpenTelemetry padroniza instrumentação entre serviços. Ele torna métricas,
-traces e logs mais consistentes entre API, workers e infraestrutura.
+OpenTelemetry standardizes instrumentation across services. It makes metrics,
+traces, and logs more consistent across the API, workers, and infrastructure.
 
-A instrumentação deve ser adicionada nos limites:
+Instrumentation should be added at boundaries:
 
-- entrada HTTP;
-- queries de banco;
-- polling da outbox;
-- publicação no Kafka;
-- consumo do Kafka;
-- operações Redis;
-- chamadas ao gateway de pagamento;
-- publicação na DLQ;
-- jobs de reconciliação.
+- HTTP entry point;
+- database queries;
+- outbox polling;
+- Kafka publication;
+- Kafka consumption;
+- Redis operations;
+- payment gateway calls;
+- DLQ publication;
+- reconciliation jobs.

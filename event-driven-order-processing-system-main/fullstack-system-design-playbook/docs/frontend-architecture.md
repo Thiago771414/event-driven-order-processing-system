@@ -1,54 +1,54 @@
-# Arquitetura do Frontend
+# Frontend Architecture
 
-A arquitetura do frontend foi desenhada para tornar o React uma entrada clara em
-um fluxo de trabalho distribuído de backend.
+The frontend architecture is designed to make React a clear entry point into
+a distributed backend workflow.
 
-## Modelo de Camadas
+## Layered Model
 
 ```mermaid
 flowchart TD
-  C[Componentes] --> H[Hooks]
-  H --> SM[Gerenciamento de Estado]
-  H --> S[Camada de Serviço]
-  S --> A[Cliente de API]
+  C[Components] --> H[Hooks]
+  H --> SM[State Management]
+  H --> S[Service Layer]
+  S --> A[API Client]
   A --> B[MiniShop Backend API]
-  SM --> P[Persistência do Navegador]
+  SM --> P[Browser Persistence]
   P --> LS[LocalStorage]
   P --> IDB[IndexedDB]
 ```
 
-## Componentes
+## Components
 
-Componentes renderizam estado e capturam intenção do usuário. Eles devem ser
-pequenos o bastante para testar e raciocinar:
+Components render state and capture user intent. They should be small enough
+to test and reason about:
 
-- resumo do pedido;
-- itens do carrinho;
-- formulário de checkout;
-- banner de status de pagamento;
-- ação de retry;
-- aviso de reconciliação ou estado pendente.
+- order summary;
+- cart items;
+- checkout form;
+- payment status banner;
+- retry action;
+- reconciliation or pending state notice.
 
-Componentes não devem saber se o backend usa Kafka, Redis ou uma outbox
-transacional.
+Components should not need to know whether the backend uses Kafka, Redis, or a
+transactional outbox.
 
 ## Hooks
 
-Hooks coordenam comportamento de tela:
+Hooks coordinate screen behavior:
 
-- carregar pedido por ID;
-- submeter checkout;
-- manter estado otimista;
-- fazer polling de mudanças de status;
-- persistir dados locais de draft;
-- expor estados de carregamento, sucesso, falha e pendência.
+- load an order by ID;
+- submit checkout;
+- maintain optimistic state;
+- poll for status changes;
+- persist local draft data;
+- expose loading, success, failure, and pending states.
 
-Hooks são um bom lugar para conectar a renderização React com chamadas de
-serviço de domínio.
+Hooks are a good place to connect React rendering with domain service
+calls.
 
-## Camada de Serviço
+## Service Layer
 
-A camada de serviço expressa operações de produto:
+The service layer expresses product operations:
 
 ```ts
 checkoutOrder(input)
@@ -57,59 +57,59 @@ retryPayment(orderId)
 getPaymentStatus(paymentId)
 ```
 
-Ela deve retornar resultados no formato do domínio, não detalhes crus de
-transporte. Isso mantém componentes focados na experiência do usuário.
+It should return domain-level results, not raw transport details.
+This keeps components focused on the user experience.
 
-## Cliente de API
+## API Client
 
-O cliente de API é dono das preocupações HTTP:
+The API client owns HTTP concerns:
 
-- URL base;
-- serialização de requisição e resposta;
-- cabeçalhos de autenticação quando necessário;
+- base URL;
+- request and response serialization;
+- authentication headers when needed;
 - `Idempotency-Key`;
 - `X-Correlation-Id`;
-- tratamento de timeout;
-- mapeamento estruturado de erros;
-- política de retry para leituras seguras.
+- timeout handling;
+- structured error mapping;
+- retry policy for safe reads.
 
-Requisições de escrita devem ser retentadas com cuidado e apenas quando
-idempotência fizer parte do contrato.
+Write requests should be retried carefully and only when
+idempotency is part of the contract.
 
-## Gerenciamento de Estado
+## State Management
 
-O estado do frontend pode ser dividido em três categorias:
+Frontend state can be divided into three categories:
 
-| Categoria | Exemplo | Armazenamento |
+| Category | Example | Storage |
 | --- | --- | --- |
-| Estado efêmero de UI | modal aberto, aba selecionada, validação inline | React state |
-| Snapshot de servidor no cliente | última resposta de pedido, status de pagamento | query cache ou state store |
-| Estado persistido no navegador | draft de carrinho, recuperação de checkout, preferências | LocalStorage ou IndexedDB |
+| Ephemeral UI state | open modal, selected tab, inline validation | React state |
+| Client-side server snapshot | latest order response, payment status | query cache or state store |
+| Browser-persisted state | cart draft, checkout recovery, preferences | LocalStorage or IndexedDB |
 
-Snapshots de servidor devem ser considerados antigos até serem atualizados ou
-invalidados por um evento conhecido.
+Server snapshots should be considered stale until refreshed or
+invalidated by a known event.
 
-## Persistência do Navegador
+## Browser Persistence
 
-LocalStorage é útil para valores pequenos, como preferências, IDs de draft e
-feature flags. IndexedDB é melhor para dados estruturados maiores, como respostas
-de catálogo em cache ou drafts com suporte offline.
+LocalStorage is useful for small values such as preferences, draft IDs, and
+feature flags. IndexedDB is better for larger structured data such as cached
+catalog responses or drafts with offline support.
 
-A persistência do navegador deve ser desenhada considerando dados antigos:
+Browser persistence should be designed with stale data in mind:
 
-- dados podem ser editados em outra aba;
-- dados podem sobreviver ao logout se não forem limpos;
-- dados podem ser mais antigos que o estado do backend;
-- dados podem ser modificados manualmente pelo usuário.
+- data can be edited in another tab;
+- data can survive logout if not cleared;
+- data can be older than backend state;
+- data can be modified manually by the user.
 
-## Contrato de UX do Checkout
+## Checkout UX Contract
 
-Checkout deve modelar diretamente a incerteza do backend:
+Checkout should model backend uncertainty directly:
 
-- `pending` significa que a requisição foi aceita, mas trabalho assíncrono continua;
-- `confirmed` significa que pagamento e pedido estão completos do ponto de vista da API;
-- `failed` significa que o usuário precisa de um caminho de recuperação;
-- `verification_required` significa que o resultado do pagamento é desconhecido e a verificação continua no backend;
-- `reconciliation_needed` significa que o sistema precisa de correção operacional ou agendada.
+- `pending` means the request was accepted, but asynchronous work continues;
+- `confirmed` means the payment and order are complete from the API's perspective;
+- `failed` means the user needs a recovery path;
+- `verification_required` means the payment outcome is unknown and verification continues in the backend;
+- `reconciliation_needed` means the system needs an operational or scheduled correction.
 
-A UI deve mostrar progresso sem fingir que todo trabalho é síncrono.
+The UI should show progress without pretending that all work is synchronous.

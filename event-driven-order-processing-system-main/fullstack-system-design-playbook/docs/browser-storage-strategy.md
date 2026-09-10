@@ -1,85 +1,85 @@
-# Estratégia de Armazenamento do Navegador
+# Browser Storage Strategy
 
-O armazenamento do navegador e persistencia local. Ele melhora continuidade de
-uso, recuperacao de fluxo e velocidade percebida, mas nao e fonte de verdade de
-negocio.
+Browser storage provides local persistence. It improves continuity,
+workflow recovery, and perceived speed, but it is not the source of truth for
+business data.
 
 ## LocalStorage
 
-Use `src/storage/localStorageAdapter.ts` para dados pequenos, simples e de
-sessao.
+Use `src/storage/localStorageAdapter.ts` for small, simple session
+data.
 
-Bons usos:
+Good uses:
 
-- preferencia de tema;
-- flags de experiencia;
-- identificador de carrinho draft;
-- pequenos snapshots de sessao;
-- dados que podem ser reconstruidos pela API.
+- theme preferences;
+- user experience flags;
+- draft cart identifier;
+- small session snapshots;
+- data that can be reconstructed from the API.
 
-Cuidados:
+Considerations:
 
-- e sincrono e bloqueia a thread principal;
-- armazena apenas strings;
-- pode ser alterado manualmente pelo usuario;
-- pode sobreviver logout se nao for limpo;
-- nao deve guardar dados sensiveis.
+- it is synchronous and blocks the main thread;
+- it stores only strings;
+- users can modify it manually;
+- it can survive logout if not cleared;
+- it should not store sensitive data.
 
 ## IndexedDB
 
-Use `src/storage/indexedDbAdapter.ts` para dados maiores, estruturados ou cache
-offline.
+Use `src/storage/indexedDbAdapter.ts` for larger, structured data or offline
+caching.
 
-Bons usos:
+Good uses:
 
-- catalogo de produtos em cache;
-- drafts maiores;
-- leituras offline;
-- historico local descartavel;
-- respostas de API com TTL.
+- cached product catalog;
+- larger drafts;
+- offline reads;
+- disposable local history;
+- API responses with a TTL.
 
-Cuidados:
+Considerations:
 
-- e assincrono;
-- exige estrategia de expiracao;
-- pode ficar inconsistente com o backend;
-- deve ter invalidacao clara quando o contrato de API muda.
+- it is asynchronous;
+- it requires an expiration strategy;
+- it can become inconsistent with the backend;
+- it should have clear invalidation rules when the API contract changes.
 
-## Estrategia de cache do frontend
+## Frontend Cache Strategy
 
-O cache do frontend deve ser tratado como dado auxiliar:
+The frontend cache should be treated as supplementary data:
 
-1. tente renderizar uma resposta local quando isso melhora a experiencia;
-2. marque o dado como possivelmente antigo;
-3. revalide com a API quando a tela ou fluxo exigir precisao;
-4. substitua o cache pela resposta mais recente;
-5. descarte cache expirado ou incompativel.
+1. try rendering a local response when it improves the experience;
+2. mark the data as potentially stale;
+3. revalidate with the API when the screen or workflow requires accuracy;
+4. replace the cache with the latest response;
+5. discard expired or incompatible cache entries.
 
-Para catalogo de produtos, IndexedDB costuma ser melhor que LocalStorage. Para
-carrinho pequeno ou preferencia, LocalStorage e suficiente.
+For a product catalog, IndexedDB is usually better than LocalStorage. For a
+small cart or a preference, LocalStorage is sufficient.
 
-## Limites importantes
+## Important Boundaries
 
-O frontend nunca deve acessar Redis ou PostgreSQL diretamente.
+The frontend must never access Redis or PostgreSQL directly.
 
-Redis e exclusivo do backend para cache quente, locks, idempotencia e protecao
-contra duplicidade. PostgreSQL guarda a verdade duravel. A API e o contrato
-entre a experiencia do usuario e esses sistemas distribuidos.
+Redis is exclusive to the backend for hot caching, locks, idempotency, and
+duplicate protection. PostgreSQL stores durable truth. The API is the contract
+between the user experience and these distributed systems.
 
-## Consistencia do backend
+## Backend Consistency
 
-MiniShop usa PostgreSQL, outbox, Kafka e workers. Isso significa que a resposta
-HTTP pode confirmar que uma requisicao foi aceita enquanto algum trabalho ainda
-continua assincronamente.
+MiniShop uses PostgreSQL, an outbox, Kafka, and workers. This means the HTTP
+response can confirm that a request was accepted while some work
+continues asynchronously.
 
-O navegador pode guardar um snapshot local, mas o status final deve vir da API.
-Em fluxos como pagamento, estados como pendente, verificacao e reconciliacao
-fazem parte do produto e nao devem ser escondidos pela UI.
+The browser can store a local snapshot, but the final status must come from the API.
+In workflows such as payments, pending, verification, and reconciliation states
+are part of the product and should not be hidden by the UI.
 
-## Regra pratica
+## Rule of Thumb
 
-- LocalStorage: pequeno, simples, sessao, preferencias.
-- IndexedDB: maior, offline, cache estruturado.
-- Redis: somente backend.
-- PostgreSQL: fonte de verdade.
-- API: unico limite permitido para o frontend falar com o sistema distribuido.
+- LocalStorage: small, simple data, sessions, preferences.
+- IndexedDB: larger data, offline access, structured caching.
+- Redis: backend only.
+- PostgreSQL: source of truth.
+- API: the only permitted boundary for frontend communication with the distributed system.

@@ -80,35 +80,35 @@ flowchart TD
 
 The backend is event-driven, but the frontend still experiences it through an API contract. That contract must tell the UI what is complete now, what is pending, and which identifiers can be used to track progress later.
 
-## Projetos Interativos de Frontend e Sistema
+## Interactive Frontend and System Projects
 
-O frontend não é apenas uma interface de usuário. Ele atua como uma camada de experiência para um sistema distribuído, traduzindo a confiabilidade, a observabilidade e a confiança operacional do backend em estados claros para o usuário.
+The frontend is more than a user interface. It provides the experience layer for a distributed system, translating backend reliability, observability, and operational trust into clear user-facing states.
 
-Este playbook inclui projetos de sistema interativo e simulação com foco em confiabilidade para explorar a conexão entre React, contratos de API, eventos, observabilidade e protótipos de operações assistidas por IA.
+This playbook includes interactive system projects and reliability-focused simulations that explore the connection between React, API contracts, events, observability, and AI-assisted operations prototypes.
 
-| Ativo | Finalidade | Link |
+| Asset | Purpose | Link |
 | --- | --- | --- |
-| Diagrama de Caso de Uso UML | Mapeia atores, limites e capacidades | [Ambiente de testes aberto](https://api-gateway-sandbox-690799752664.us-east1.run.app/) |
-| Diagrama de Sequência UML | Simula interações distribuídas ao longo do tempo | [Abrir simulador](https://eventual-consistency-simulator-451663135116.us-west1.run.app/) |
-| Vídeo de demonstração | Mostra o sistema em execução localmente | [Assistir ao vídeo](https://youtu.be/M7fd6nJGt8g) |
+| UML Use Case Diagram | Maps actors, boundaries, and capabilities | [Open sandbox](https://api-gateway-sandbox-690799752664.us-east1.run.app/) |
+| UML Sequence Diagram | Simulates distributed interactions over time | [Open simulator](https://eventual-consistency-simulator-451663135116.us-west1.run.app/) |
+| Demo video | Shows the system running locally | [Watch the video](https://youtu.be/M7fd6nJGt8g) |
 
-### Simulador de Sequência Frontend + Backend
+### Frontend + Backend Sequence Simulator
 
-[Abrir simulador de fluxo distribuído](https://eventual-consistency-simulator-451663135116.us-west1.run.app/)
+[Open distributed workflow simulator](https://eventual-consistency-simulator-451663135116.us-west1.run.app/)
 
-Diagrama de Sequência UML interativo mostrando como os componentes React, hooks, camada de serviço, cliente API, API backend, PostgreSQL, Outbox, Kafka, Workers, Redis, observabilidade, IA Ops e Engenharia de Confiança interagem.
+An interactive UML Sequence Diagram showing how React components, hooks, the service layer, API client, backend API, PostgreSQL, Outbox, Kafka, Workers, Redis, observability, AI Ops, and Trust Engineering interact.
 
-### Sandbox de Arquitetura de Casos de Uso
+### Use Case Architecture Sandbox
 
-[Abrir sandbox de arquitetura](https://api-gateway-sandbox-690799752664.us-east1.run.app/)
+[Open architecture sandbox](https://api-gateway-sandbox-690799752664.us-east1.run.app/)
 
-Diagrama de Casos de Uso UML interativo mapeando usuários do frontend, atores do backend, limites da API, gateway seguro MCP, sistemas de observabilidade, Assistente de Operações de IA e Console de Operações de Confiança.
+An interactive UML Use Case Diagram mapping frontend users, backend actors, API boundaries, the secure MCP gateway, observability systems, the AI Operations Assistant, and the Trust Operations Console.
 
-### Vídeo de Demonstração
+### Demo Video
 
-[Assistir ao vídeo de demonstração](https://youtu.be/M7fd6nJGt8g)
+[Watch the demo video](https://youtu.be/M7fd6nJGt8g)
 
-Vídeo explicativo do playbook fullstack, console de arquitetura, inteligência de métricas, assistente de confiabilidade de IA e camada de operações de confiança do cliente.
+A video walkthrough of the fullstack playbook, architecture console, metrics intelligence, AI reliability assistant, and customer trust operations layer.
 
 ## 4. Frontend Architecture
 
@@ -314,16 +314,16 @@ Observability explains the distributed workflow after the HTTP response has retu
 - **Jaeger** visualizes distributed traces.
 - **OpenTelemetry** standardizes instrumentation across services.
 
-## 14. Orquestracao de Sagas com Netflix Conductor
+## 14. Saga Orchestration with Netflix Conductor
 
-Este playbook mostra como um mecanismo de fluxo de trabalho como o Netflix Conductor pode ser usado como um orquestrador de sagas em uma arquitetura inspirada em produção. A implementação é intencionalmente conceitual e baseada em mocks para evitar adicionar complexidade operacional desnecessária ao projeto de aprendizado.
+This playbook shows how a workflow engine such as Netflix Conductor can serve as a saga orchestrator in a production-inspired architecture. The implementation is intentionally conceptual and mock-based to avoid adding unnecessary operational complexity to the learning project.
 
-- Este repositorio nao executa o Conductor.
-- O exemplo e conceitual e educacional.
-- O MiniShop demonstra atualmente confiabilidade orientada a eventos.
-- O Conductor seria uma camada de orquestracao avancada para fluxos de trabalho de microsservicos mais complexos.
+- This repository does not run Conductor.
+- The example is conceptual and educational.
+- MiniShop currently demonstrates event-driven reliability.
+- Conductor would provide an advanced orchestration layer for more complex microservice workflows.
 
-Veja os documentos em [docs/saga-orchestration](docs/saga-orchestration/README.md) e o prototipo visual no Console de Arquitetura do MiniShop.
+See the documents in [docs/saga-orchestration](docs/saga-orchestration/README.md) and the visual prototype in the MiniShop Architecture Console.
 
 ## 15. Repository Map
 

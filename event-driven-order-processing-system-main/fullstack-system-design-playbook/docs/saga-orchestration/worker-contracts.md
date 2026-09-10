@@ -1,69 +1,69 @@
-# Contratos de Workers para Sagas
+# Worker Contracts for Sagas
 
-Workers sao processos que executam tarefas individuais de um workflow. No modelo inspirado no Netflix Conductor, o Conductor mantem a fila e o estado das tarefas, enquanto os workers consultam tarefas disponiveis, executam trabalho local e reportam o resultado.
+Workers are processes that execute individual workflow tasks. In the Netflix Conductor-inspired model, Conductor maintains the task queue and state while workers poll for available tasks, perform local work, and report the result.
 
-## Consulta de tarefas
+## Task Polling
 
-Um worker consulta o Conductor por tarefas de um tipo especifico, por exemplo `autorizar_pagamento` ou `reservar_estoque`. A resposta conceitual contem:
+A worker polls Conductor for tasks of a specific type, such as `autorizar_pagamento` or `reservar_estoque`. The conceptual response contains:
 
 - `taskId`;
 - `workflowId`;
 - `correlationId`;
-- parametros de entrada;
-- numero da tentativa;
-- deadlines e timeouts;
-- metadados de observabilidade.
+- input parameters;
+- attempt number;
+- deadlines and timeouts;
+- observability metadata.
 
-O worker deve tratar a tarefa como uma unidade idempotente. Se a mesma tarefa reaparecer apos timeout, retry ou reinicio do processo, a execucao nao deve criar efeitos duplicados.
+The worker should treat the task as an idempotent unit. If the same task reappears after a timeout, retry, or process restart, execution should not create duplicate effects.
 
-## Conclusao de tarefas
+## Task Completion
 
-Ao concluir, o worker envia ao Conductor:
+On completion, the worker sends Conductor:
 
-- status de sucesso;
-- payload de saida minimo e tipado;
-- duracao;
-- referencias externas, como `paymentReference` ou `orderId`;
-- sinais de observabilidade.
+- success status;
+- a minimal, typed output payload;
+- duration;
+- external references, such as `paymentReference` or `orderId`;
+- observability signals.
 
-O payload de saida deve ser suficiente para o proximo passo do workflow decidir o que fazer, mas nao deve virar um banco de dados paralelo.
+The output payload should be sufficient for the next workflow step to decide what to do, but it should not become a parallel database.
 
-## Falha de tarefas
+## Task Failure
 
-Ao falhar, o worker deve diferenciar:
+On failure, the worker should distinguish between:
 
-- falha temporaria, como timeout de gateway;
-- falha de negocio, como pagamento rejeitado;
-- falha tecnica irrecuperavel, como payload invalido;
-- resultado desconhecido, como conexao perdida apos chamada ao gateway.
+- a temporary failure, such as a gateway timeout;
+- a business failure, such as a rejected payment;
+- an unrecoverable technical failure, such as an invalid payload;
+- an unknown outcome, such as a lost connection after calling the gateway.
 
-Essa diferenca define se o Conductor faz retry, segue para uma tarefa de verificacao, executa compensacao ou envia o caso para DLQ.
+This distinction determines whether Conductor retries, proceeds to a verification task, executes compensation, or sends the case to the DLQ.
 
-## Politica de repeticao
+## Retry Policy
 
-Retries devem ser configurados por tarefa. Um exemplo conceitual:
+Retries should be configured per task. A conceptual example:
 
-| Tarefa | Tentativas | Backoff | Observacao |
+| Task | Attempts | Backoff | Note |
 | --- | --- | --- | --- |
-| `autorizar_pagamento` | 3 | exponencial curto | seguro apenas com idempotency key no gateway |
-| `reservar_estoque` | 3 | exponencial curto | deve deduplicar por `orderId` |
-| `confirmar_pedido` | 2 | linear curto | atualizacao local no banco |
-| `publicar_pedido_confirmado` | 5 | exponencial | outbox protege publicacao |
+| `autorizar_pagamento` | 3 | short exponential | safe only with a gateway idempotency key |
+| `reservar_estoque` | 3 | short exponential | must deduplicate by `orderId` |
+| `confirmar_pedido` | 2 | short linear | local database update |
+| `publicar_pedido_confirmado` | 5 | exponential | outbox protects publication |
 
-Retries nao substituem idempotencia. Eles apenas tornam falhas temporarias recuperaveis.
+Retries do not replace idempotency. They only make temporary failures recoverable.
 
-## Politica de tempo limite
+## Timeout Policy
 
-Timeouts devem existir em dois niveis:
+Timeouts should exist at two levels:
 
-- timeout da tarefa, para impedir que um worker fique preso indefinidamente;
-- timeout do workflow, para impedir que a saga inteira fique aberta sem decisao.
+- task timeout, to prevent a worker from remaining stuck indefinitely;
+- workflow timeout, to prevent the entire saga from remaining open without a decision.
 
-Quando uma tarefa expira, o workflow pode repetir a tarefa, chamar uma tarefa de verificacao ou suspender o fluxo para investigacao.
+When a task times out, the workflow can retry it, call a verification task, or suspend the flow for investigation.
 
-## Idempotencia
+## Idempotency
 
-Cada worker deve usar chaves estaveis:
+Each worker should use stable keys:
 
 - `workflowId`;
 - `taskId`;
@@ -72,27 +72,27 @@ Cada worker deve usar chaves estaveis:
 - `paymentId`;
 - `idempotencyKey`.
 
-Operacoes externas, como autorizacao e reembolso de pagamento, precisam de uma idempotency key aceita pelo provedor externo. Operacoes internas podem usar Redis, constraints no PostgreSQL ou tabelas de deduplicacao.
+External operations, such as payment authorization and refunds, need an idempotency key accepted by the external provider. Internal operations can use Redis, PostgreSQL constraints, or deduplication tables.
 
-## Tarefas de compensacao
+## Compensation Tasks
 
-Tarefas como `reembolsar_pagamento`, `cancelar_pedido` e `publicar_pedido_cancelado` precisam ser tratadas como fluxo de primeira classe:
+Tasks such as `reembolsar_pagamento`, `cancelar_pedido`, and `publicar_pedido_cancelado` must be treated as first-class workflows:
 
-- devem ser idempotentes;
-- devem ter retries proprios;
-- devem emitir eventos e logs claros;
-- devem preservar o motivo da compensacao;
-- devem ser visiveis no historico do workflow.
+- they must be idempotent;
+- they must have their own retries;
+- they must emit clear events and logs;
+- they must preserve the reason for compensation;
+- they must be visible in the workflow history.
 
-Compensacao nao significa apagar o passado. Ela registra uma nova acao que desfaz ou neutraliza o efeito de uma etapa anterior.
+Compensation does not mean erasing the past. It records a new action that reverses or neutralizes the effect of an earlier step.
 
-## Observabilidade
+## Observability
 
-Cada worker deve emitir:
+Each worker should emit:
 
-- logs estruturados com `workflowId`, `taskId`, `orderId` e `correlationId`;
-- metricas de latencia, sucesso, falha, retry e timeout;
-- spans de tracing conectados ao trace iniciado pela API;
-- eventos de auditoria para mudancas de estado importantes.
+- structured logs with `workflowId`, `taskId`, `orderId`, and `correlationId`;
+- metrics for latency, success, failure, retry, and timeout;
+- tracing spans connected to the trace started by the API;
+- audit events for important state changes.
 
-O objetivo operacional e responder rapidamente: qual etapa falhou, quantas vezes tentou, qual servico era responsavel e qual acao de compensacao foi executada.
+The operational goal is to quickly answer which step failed, how many attempts it made, which service was responsible, and which compensating action was executed.

@@ -1,30 +1,30 @@
-# Canary Release no MiniShop
+# Canary Release in MiniShop
 
-Este documento descreve a estrategia de Canary Release mais segura para a arquitetura atual do MiniShop.
+This document describes the safest Canary Release strategy for MiniShop's current architecture.
 
-## Onde inserir
+## Where to Introduce It
 
-A arquitetura atual tem tres superficies de deploy:
+The current architecture has three deployment targets:
 
-- **API NestJS**: recebe HTTP, valida requests, grava `orders`, `payments` e `outbox_events` no PostgreSQL. Nao publica diretamente no Kafka.
-- **Outbox Worker**: le a outbox transacional e publica no Kafka preservando `partition_key`.
-- **Worker Kafka**: consome `orders.created`, `orders.created.dlq`, `payments.verification.requested` e `payments.verification.dlq`, com retry, DLQ e idempotencia Redis.
+- **NestJS API**: receives HTTP requests, validates them, and writes `orders`, `payments`, and `outbox_events` to PostgreSQL. It does not publish directly to Kafka.
+- **Outbox Worker**: reads the transactional outbox and publishes to Kafka while preserving `partition_key`.
+- **Kafka Worker**: consumes `orders.created`, `orders.created.dlq`, `payments.verification.requested`, and `payments.verification.dlq`, with retries, DLQ handling, and Redis idempotency.
 
-O ponto mais seguro para o primeiro canary e a **API**:
+The safest place for the first canary is the **API**:
 
-- o trafego HTTP pode ser dividido por porcentagem no Ingress;
-- rollback e imediato, reduzindo o peso do Ingress para `0`;
-- a API ja usa outbox, entao a versao canary nao acopla request HTTP diretamente ao Kafka;
-- workers e outbox permanecem estaveis durante a primeira fase, reduzindo risco em ordem, idempotencia e pagamentos.
+- HTTP traffic can be split by percentage at the Ingress;
+- rollback is immediate by reducing the Ingress weight to `0`;
+- the API already uses an outbox, so the canary version does not couple HTTP requests directly to Kafka;
+- workers and the outbox remain stable during the first phase, reducing risks to ordering, idempotency, and payments.
 
-## Estrategia recomendada
+## Recommended Strategy
 
-Use **Canary em nivel de API via Ingress NGINX ponderado** como estrategia padrao.
+Use an **API-level Canary via weighted Ingress NGINX routing** as the default strategy.
 
-Fluxo:
+Flow:
 
 ```text
-Cliente
+Client
   -> Ingress NGINX
     -> 95% Service minishop-api        -> Deployment stable v1
     -> 5%  Service minishop-api-canary -> Deployment canary v2
@@ -34,33 +34,33 @@ Cliente
   -> Worker stable
 ```
 
-Essa abordagem evita complexidade operacional de service mesh e ainda entrega os controles essenciais de producao: divisao gradual, observabilidade por versao e rollback rapido.
+This approach avoids the operational complexity of a service mesh while providing essential production controls: gradual traffic splitting, observability by version, and fast rollback.
 
-## Fases de rollout
+## Rollout Phases
 
-Fase 1:
+Phase 1:
 
-- aplicar `kubectl apply -k k8s/canary`;
-- manter `nginx.ingress.kubernetes.io/canary-weight: "5"`;
-- observar por pelo menos uma janela de metricas suficiente para o volume real.
+- apply `kubectl apply -k k8s/canary`;
+- keep `nginx.ingress.kubernetes.io/canary-weight: "5"`;
+- observe for at least one metrics window sufficient for the actual traffic volume.
 
-Fase 2:
+Phase 2:
 
-- aumentar para `25`;
-- comparar canary vs stable por `release_track` e `app_version`.
+- increase to `25`;
+- compare canary versus stable by `release_track` and `app_version`.
 
-Fase 3:
+Phase 3:
 
-- aumentar para `50`;
-- observar impacto em p95/p99, erros e metricas de negocio.
+- increase to `50`;
+- observe the impact on p95/p99, errors, and business metrics.
 
-Fase 4:
+Phase 4:
 
-- promover a imagem v2 para o Deployment stable;
-- remover ou zerar o Ingress canary;
-- manter dashboard por uma janela apos promocao.
+- promote the v2 image to the stable Deployment;
+- remove the canary Ingress or set its weight to zero;
+- continue monitoring the dashboard for one window after promotion.
 
-Comandos uteis:
+Useful commands:
 
 ```bash
 kubectl apply -k k8s
@@ -75,171 +75,171 @@ kubectl annotate ingress minishop-api-canary \
   --overwrite
 ```
 
-Observacao: se um Deployment antigo ja foi aplicado sem `release-track` no selector, Kubernetes pode exigir recriacao desse Deployment porque `spec.selector` e imutavel.
+Note: if an older Deployment was already applied without `release-track` in its selector, Kubernetes may require recreating that Deployment because `spec.selector` is immutable.
 
-## Condicoes de rollback
+## Rollback Conditions
 
-Reduza o peso para `0` ou remova os recursos canary se qualquer condicao sustentar degradacao contra stable:
+Reduce the weight to `0` or remove the canary resources if any condition shows sustained degradation compared with stable:
 
-- aumento de HTTP `5xx`;
-- aumento de p95/p99 em `http_request_duration_ms`;
-- aumento de `orders_retries_total`;
-- aumento de `orders_dlq_total`;
-- aumento de `payment_verification_retries_total`;
-- aumento de `payment_verification_dlq_total`;
-- aumento de `payment_verification_total{result=~"failed|unknown|dlq"}`;
-- aumento de `outbox_failed_total`;
-- aumento de `outbox_lag_seconds`;
-- aumento de consumer lag Kafka, quando houver exporter Kafka/Redpanda.
+- increased HTTP `5xx` responses;
+- increased p95/p99 in `http_request_duration_ms`;
+- increased `orders_retries_total`;
+- increased `orders_dlq_total`;
+- increased `payment_verification_retries_total`;
+- increased `payment_verification_dlq_total`;
+- increased `payment_verification_total{result=~"failed|unknown|dlq"}`;
+- increased `outbox_failed_total`;
+- increased `outbox_lag_seconds`;
+- increased Kafka consumer lag, when a Kafka/Redpanda exporter is available.
 
-O dashboard `infra/grafana/dashboards/canary-release.json` usa labels de release para comparar stable e canary.
+The `infra/grafana/dashboards/canary-release.json` dashboard uses release labels to compare stable and canary.
 
-## Workers Kafka durante canary
+## Kafka Workers During a Canary Release
 
-Canary de worker exige mais cuidado que canary de API.
+Worker canaries require more care than API canaries.
 
-Recomendacao:
+Recommendation:
 
-- para a primeira versao, mantenha **worker e outbox-worker estaveis**;
-- permita que a API canary gere eventos somente se o contrato dos eventos continuar compativel;
-- use o mesmo `KAFKA_CONSUMER_GROUP_ID` (`minishop-worker-group`) para workers que realmente executam efeitos;
-- nao use grupo de consumidor isolado para processar os mesmos topicos em producao.
+- for the first version, keep the **worker and outbox-worker stable**;
+- allow the canary API to generate events only if the event contract remains compatible;
+- use the same `KAFKA_CONSUMER_GROUP_ID` (`minishop-worker-group`) for workers that actually perform side effects;
+- do not use an isolated consumer group to process the same topics in production.
 
-Por que nao usar consumer group isolado para canary ativo?
+Why avoid an isolated consumer group for an active canary?
 
-Um grupo novo consome os mesmos eventos de forma independente. Isso duplica processamento e pode duplicar efeitos externos, como atualizacao de pagamento, publicacao de eventos derivados e chamadas a gateways. A idempotencia Redis reduz dano, mas nao deve ser usada como desculpa para criar dois pipelines ativos para os mesmos eventos.
+A new group consumes the same events independently. This duplicates processing and can duplicate external effects, such as payment updates, derived event publication, and gateway calls. Redis idempotency reduces harm, but it should not justify creating two active pipelines for the same events.
 
-Quando worker canary e aceitavel:
+When a worker canary is acceptable:
 
-- mudancas compativeis e aditivas;
-- sem alteracao de efeitos externos;
-- mesma semantica de idempotencia;
-- mesmo consumer group;
-- rollout com poucas replicas;
-- monitoramento forte de retry, DLQ e consumer lag.
+- compatible, additive changes;
+- no changes to external effects;
+- the same idempotency semantics;
+- the same consumer group;
+- rollout with a small number of replicas;
+- strong monitoring of retries, DLQs, and consumer lag.
 
-Mesmo no mesmo consumer group, Kafka faz rebalance e pode haver reentrega at-least-once. A idempotencia Redis e as chaves por `orderId`/`paymentId` continuam obrigatorias.
+Even within the same consumer group, Kafka rebalances and at-least-once redelivery can occur. Redis idempotency and keys based on `orderId`/`paymentId` remain mandatory.
 
-## Pagamentos
+## Payments
 
-Fluxos de pagamento devem evitar canary inicialmente quando a mudanca altera:
+Payment flows should initially avoid canary releases when the change affects:
 
-- autorizacao/captura;
-- decisao de status;
-- reconciliacao;
-- webhook;
-- regras de retry;
-- chamadas ao gateway.
+- authorization/capture;
+- status decisions;
+- reconciliation;
+- webhooks;
+- retry rules;
+- gateway calls.
 
-Para pagamento, prefira feature flags de negocio com escopo explicito:
+For payments, prefer business feature flags with explicit scope:
 
-- por cliente interno;
-- por ambiente;
-- por metodo de pagamento;
-- por lista allowlist;
-- por modo read-only/shadow.
+- by internal customer;
+- by environment;
+- by payment method;
+- by allowlist;
+- by read-only/shadow mode.
 
-Roteamento por porcentagem e bom para trafego HTTP geral. Feature flag e mais segura para decisoes financeiras porque a coorte pode ser auditada e revertida sem mover pods.
+Percentage-based routing works well for general HTTP traffic. Feature flags are safer for financial decisions because the cohort can be audited and changes reverted without moving pods.
 
-## Evolucao de eventos
+## Event Evolution
 
-Durante canary, eventos precisam ser compativeis entre versoes.
+During a canary release, events must be compatible across versions.
 
-Regras:
+Rules:
 
-- adicione campos de forma opcional;
-- nao remova campos usados por workers estaveis;
-- nao mude semantica de campos existentes;
-- quando houver breaking change, crie novo tipo, por exemplo `orders.created.v2`;
-- mantenha consumidores lendo `v1` e `v2` durante a migracao;
-- promova producer v2 somente depois que consumers v2 estiverem prontos.
+- add optional fields;
+- do not remove fields used by stable workers;
+- do not change the semantics of existing fields;
+- for a breaking change, create a new type, such as `orders.created.v2`;
+- keep consumers reading `v1` and `v2` during migration;
+- promote the v2 producer only after v2 consumers are ready.
 
-## Comparacao das alternativas
+## Comparing Alternatives
 
-### Canary em nivel de API
+### API-Level Canary
 
-Melhor ponto inicial para este projeto.
+The best starting point for this project.
 
-Vantagens:
+Advantages:
 
-- porcentagem real de trafego;
-- rollback simples no Ingress;
-- menor risco para Kafka, ordem e idempotencia;
-- integra bem com metricas HTTP, Prometheus e traces.
+- actual traffic percentages;
+- simple rollback at the Ingress;
+- lower risk to Kafka, ordering, and idempotency;
+- integrates well with HTTP metrics, Prometheus, and traces.
 
-Limites:
+Limitations:
 
-- nao valida mudancas profundas em workers;
-- exige compatibilidade dos eventos gerados pela API canary.
+- does not validate substantial worker changes;
+- requires compatibility of events generated by the canary API.
 
-### Canary em nivel de worker
+### Worker-Level Canary
 
-Util para mudancas em processamento assincrono, mas nao deve ser a primeira camada.
+Useful for changes to asynchronous processing, but should not be the first layer.
 
-Vantagens:
+Advantages:
 
-- valida codigo novo no consumidor real;
-- preserva particionamento quando usa o mesmo consumer group.
+- validates new code in the actual consumer;
+- preserves partitioning when using the same consumer group.
 
-Riscos:
+Risks:
 
-- porcentagem nao e precisa, porque Kafka distribui particoes;
-- rebalances podem gerar reentrega;
-- mudancas de pagamento podem gerar efeitos externos incorretos.
+- the percentage is not precise because Kafka distributes partitions;
+- rebalances can cause redelivery;
+- payment changes can cause incorrect external effects.
 
-### Canary por consumer group Kafka
+### Canary by Kafka Consumer Group
 
-Nao recomendado para processamento ativo dos mesmos topicos.
+Not recommended for active processing of the same topics.
 
-Use apenas para:
+Use only for:
 
-- shadow consumer sem efeito colateral;
-- topicos espelhados;
-- validacao de parse/schema;
-- metricas de leitura sem commit operacional relevante.
+- shadow consumers without side effects;
+- mirrored topics;
+- parsing/schema validation;
+- read metrics without operationally significant commits.
 
 ### Feature flags
 
-Mais seguras para regras de negocio e pagamento.
+Safer for business and payment rules.
 
-Boa escolha para:
+A good choice for:
 
-- ativar novo algoritmo de decisao;
-- limitar rollout por cliente/coorte;
-- desabilitar caminho novo sem redeploy;
-- proteger fluxos financeiros.
+- enabling a new decision algorithm;
+- limiting rollout by customer/cohort;
+- disabling a new path without redeployment;
+- protecting financial flows.
 
 ### Blue/Green
 
-Bom para troca rapida de ambiente completo, mas menos adequado como primeira opcao aqui.
+Good for quickly switching an entire environment, but less suitable as the first option here.
 
-Vantagens:
+Advantages:
 
-- rollback simples;
-- isolamento forte.
+- simple rollback;
+- strong isolation.
 
-Limites:
+Limitations:
 
-- nao oferece progressao fina 5/25/50;
-- pode duplicar custo operacional;
-- workers e Kafka exigem cuidado extra para nao duplicar consumo.
+- does not offer fine-grained 5/25/50 progression;
+- can double operational costs;
+- workers and Kafka require extra care to avoid duplicate consumption.
 
-### Service Mesh vs Ingress leve
+### Service Mesh vs Lightweight Ingress
 
-Service mesh como Istio/Linkerd oferece traffic shifting avancado, mTLS, retries e telemetria rica.
+A service mesh such as Istio/Linkerd offers advanced traffic shifting, mTLS, retries, and rich telemetry.
 
-Para este projeto, a abordagem leve com Ingress NGINX e melhor:
+For this project, the lightweight Ingress NGINX approach is better:
 
-- menor curva operacional;
-- menos componentes;
-- suficiente para canary HTTP;
-- facil de demonstrar maturidade sem overengineering.
+- a smaller operational learning curve;
+- fewer components;
+- sufficient for HTTP canaries;
+- makes it easy to demonstrate maturity without overengineering.
 
-Adote mesh somente se houver necessidade real de politicas L7 complexas, mTLS entre servicos, retries padronizados ou roteamento por header/coorte em muitos servicos.
+Adopt a mesh only when there is a real need for complex L7 policies, inter-service mTLS, standardized retries, or header/cohort routing across many services.
 
-## Observabilidade adicionada
+## Added Observability
 
-Metricas agora carregam labels:
+Metrics now carry these labels:
 
 - `app_name`;
 - `app_version`;
@@ -247,31 +247,31 @@ Metricas agora carregam labels:
 - `release_track`;
 - `canary_cohort`.
 
-Traces carregam atributos OTEL:
+Traces carry these OTEL attributes:
 
 - `service.version`;
 - `deployment.version`;
 - `release.track`;
 - `canary.cohort`.
 
-A API tambem expoe:
+The API also exposes:
 
 - `http_requests_total`;
 - `http_request_duration_ms`.
 
-Essas metricas permitem comparar stable/canary no Prometheus e no Grafana.
+These metrics allow stable/canary comparisons in Prometheus and Grafana.
 
-## Riscos operacionais
+## Operational Risks
 
-- Baixo volume pode mascarar regressao; avance fases por tempo e por quantidade minima de requests.
-- Canary de API nao prova mudancas de worker; teste essas mudancas com topicos de staging ou shadow.
-- Fluxo financeiro deve iniciar protegido por feature flag e allowlist.
-- Mudancas de schema precisam ser backward compatible.
-- Rollback de codigo nao desfaz eventos ja gravados na outbox.
-- Se a versao canary emitir evento invalido, o dano aparece depois no worker; por isso DLQ e retry sao guardrails obrigatorios.
+- Low volume can hide regressions; advance phases based on both time and a minimum request count.
+- An API canary does not validate worker changes; test those changes with staging or shadow topics.
+- Financial flows should initially be protected by a feature flag and an allowlist.
+- Schema changes must be backward compatible.
+- Code rollback does not undo events already written to the outbox.
+- If the canary version emits an invalid event, the harm appears later in the worker; DLQs and retries are therefore mandatory guardrails.
 
-## Decisao final
+## Final Decision
 
-Implementar primeiro **Canary Release da API por Ingress NGINX**, mantendo workers estaveis. Evoluir para worker canary apenas quando houver necessidade clara e contrato de evento compativel.
+Implement an **API Canary Release through Ingress NGINX** first, keeping workers stable. Introduce worker canaries only when there is a clear need and a compatible event contract.
 
-Essa e a menor arquitetura de producao que atende aos objetivos: entrega progressiva, rollback rapido, preservacao de ordem/idempotencia e observabilidade por versao.
+This is the smallest production architecture that meets the goals: progressive delivery, fast rollback, preservation of ordering/idempotency, and observability by version.

@@ -1,17 +1,17 @@
-# Blueprint MiniShop + Netflix Conductor
+# MiniShop + Netflix Conductor Blueprint
 
-Este blueprint mostra como o MiniShop poderia evoluir para usar o Netflix Conductor como orquestrador de sagas sem substituir o backend atual. A API, o PostgreSQL, o outbox, Kafka, Redis e workers continuam sendo conceitos centrais. O Conductor entraria como uma camada avancada para coordenar workflows de negocio mais longos.
+This blueprint shows how MiniShop could evolve to use Netflix Conductor as a saga orchestrator without replacing the current backend. The API, PostgreSQL, outbox, Kafka, Redis, and workers remain core concepts. Conductor would provide an advanced layer for coordinating longer business workflows.
 
-## Principios
+## Principles
 
-- O backend existente do MiniShop nao e substituido.
-- O Conductor nao acessa diretamente detalhes internos dos componentes React.
-- Workers continuam donos das integracoes com servicos, bancos e gateways.
-- O workflow engine coordena ordem, decisao, retry, timeout, pausa e compensacao.
-- O Kafka continua util para eventos de dominio, integracao assincrona e comunicacao entre contextos.
-- O exemplo deste repositorio e conceitual, leve e baseado em mocks.
+- The existing MiniShop backend is not replaced.
+- Conductor does not directly access React component internals.
+- Workers remain responsible for integrations with services, databases, and gateways.
+- The workflow engine coordinates sequencing, decisions, retries, timeouts, pauses, and compensation.
+- Kafka remains useful for domain events, asynchronous integration, and communication between contexts.
+- This repository's example is conceptual, lightweight, and mock-based.
 
-## Fluxo conceitual de checkout
+## Conceptual Checkout Flow
 
 ```text
 CheckoutIniciado
@@ -27,36 +27,36 @@ ConfirmarPedido
 PublicarPedidoConfirmado
 ```
 
-## Diagrama: fluxo de checkout com caminho feliz
+## Diagram: Happy-Path Checkout Flow
 
 ```mermaid
 sequenceDiagram
   autonumber
   participant UI as React MiniShop
   participant API as MiniShop API
-  participant Conductor as Conductor conceitual
+  participant Conductor as Conceptual Conductor
   participant Order as Order Worker
   participant Payment as Payment Worker
   participant Inventory as Inventory Worker
   participant Outbox as Outbox Worker
   participant Kafka as Kafka
 
-  UI->>API: POST /checkout com idempotency key
-  API->>Order: Criar pedido pendente
-  API->>Conductor: Iniciar workflow CheckoutSaga
+  UI->>API: POST /checkout with idempotency key
+  API->>Order: Create pending order
+  API->>Conductor: Start CheckoutSaga workflow
   Conductor->>Payment: autorizar_pagamento
-  Payment-->>Conductor: pagamento autorizado
+  Payment-->>Conductor: payment authorized
   Conductor->>Inventory: reservar_estoque
-  Inventory-->>Conductor: estoque reservado
+  Inventory-->>Conductor: inventory reserved
   Conductor->>Order: confirmar_pedido
-  Order-->>Conductor: pedido confirmado
+  Order-->>Conductor: order confirmed
   Conductor->>Outbox: publicar_pedido_confirmado
   Outbox->>Kafka: orders.confirmed
 ```
 
-## Fluxo de compensacao
+## Compensation Flow
 
-Se `AutorizarPagamento` for bem-sucedido, mas `ConfirmarPedido` falhar:
+If `AutorizarPagamento` succeeds but `ConfirmarPedido` fails:
 
 ```text
 ReembolsarPagamento
@@ -66,64 +66,64 @@ CancelarPedido
 PublicarPedidoCancelado
 ```
 
-## Diagrama: fluxo de trabalho de compensacao
+## Diagram: Compensation Workflow
 
 ```mermaid
 flowchart TD
-  A["Pagamento autorizado"] --> B["ConfirmarPedido falha"]
-  B --> C["Conductor marca etapa como falhou"]
+  A["Payment authorized"] --> B["ConfirmarPedido fails"]
+  B --> C["Conductor marks step as failed"]
   C --> D["ReembolsarPagamento"]
   D --> E["CancelarPedido"]
   E --> F["PublicarPedidoCancelado"]
   F --> G["Kafka: orders.cancelled"]
-  C --> H["Historico operacional com correlation ID"]
+  C --> H["Operational history with correlation ID"]
 ```
 
-## Resultado de pagamento desconhecido
+## Unknown Payment Outcome
 
-Se o resultado do pagamento for desconhecido, o workflow deve pausar a confirmacao e verificar o gateway antes de decidir:
+If the payment outcome is unknown, the workflow should pause confirmation and check the gateway before deciding:
 
 ```text
 PagamentoPendenteVerificacao
 ↓
-Consultar o Gateway de Pagamento
+Query the Payment Gateway
 ↓
-ConfirmarPagamento ou CancelarPagamento
+ConfirmarPagamento or CancelarPagamento
 ↓
-Retomar fluxo de trabalho
+Resume workflow
 ```
 
-## Diagrama: tempo limite de pagamento e workflow em suspenso
+## Diagram: Payment Timeout and Suspended Workflow
 
 ```mermaid
 stateDiagram-v2
   [*] --> AutorizarPagamento
-  AutorizarPagamento --> PagamentoPendenteVerificacao: timeout ou resposta desconhecida
-  PagamentoPendenteVerificacao --> ConsultarGateway: retry controlado
-  ConsultarGateway --> ConfirmarPagamento: gateway confirmou
-  ConsultarGateway --> CancelarPagamento: gateway rejeitou
-  ConsultarGateway --> PagamentoPendenteVerificacao: gateway indisponivel
+  AutorizarPagamento --> PagamentoPendenteVerificacao: timeout or unknown response
+  PagamentoPendenteVerificacao --> ConsultarGateway: controlled retry
+  ConsultarGateway --> ConfirmarPagamento: gateway confirmed
+  ConsultarGateway --> CancelarPagamento: gateway rejected
+  ConsultarGateway --> PagamentoPendenteVerificacao: gateway unavailable
   ConfirmarPagamento --> RetomarWorkflow
   CancelarPagamento --> CompensarWorkflow
   RetomarWorkflow --> ConfirmarPedido
   CompensarWorkflow --> CancelarPedido
 ```
 
-## Responsabilidades sugeridas
+## Suggested Responsibilities
 
-| Responsavel | Papel no modelo |
+| Owner | Role in the model |
 | --- | --- |
-| React MiniShop | Exibe o estado recebido pela API e pelo console simulado. Nao conhece Conductor real. |
-| MiniShop API | Recebe checkout, cria registros iniciais e inicia ou referencia o workflow. |
-| Conductor | Mantem estado do workflow, decide proximas tarefas, aplica retries e timeouts. |
-| Workers | Executam tarefas especificas, usam idempotencia e reportam sucesso ou falha. |
-| PostgreSQL | Continua como fonte de verdade para pedidos, pagamentos e outbox. |
-| Kafka | Distribui eventos de dominio confirmados para outros consumidores. |
-| Redis | Ajuda em idempotencia, locks curtos e deduplicacao de workers. |
-| Observabilidade | Correlaciona API, workflow, workers, Kafka e banco. |
+| React MiniShop | Displays state received from the API and the simulated console. Has no knowledge of a real Conductor instance. |
+| MiniShop API | Receives checkout requests, creates initial records, and starts or references the workflow. |
+| Conductor | Maintains workflow state, decides the next tasks, and applies retries and timeouts. |
+| Workers | Execute specific tasks, use idempotency, and report success or failure. |
+| PostgreSQL | Remains the source of truth for orders, payments, and the outbox. |
+| Kafka | Distributes committed domain events to other consumers. |
+| Redis | Supports idempotency, short-lived locks, and worker deduplication. |
+| Observability | Correlates the API, workflow, workers, Kafka, and database. |
 
-## Onde isso se encaixa no MiniShop
+## Where This Fits in MiniShop
 
-O Conductor seria uma camada acima dos servicos de dominio, nao uma substituicao deles. O workflow chamaria workers que continuam usando contratos explicitos, idempotency keys, correlation IDs e operacoes locais transacionais.
+Conductor would be a layer above the domain services, not a replacement for them. The workflow would call workers that continue to use explicit contracts, idempotency keys, correlation IDs, and local transactional operations.
 
-Em uma implementacao real, a API poderia retornar um `workflowId` junto com o `orderId`. A UI nao precisaria chamar o Conductor diretamente. Ela consultaria a API do MiniShop, que traduziria o estado operacional para um modelo de produto seguro.
+In a real implementation, the API could return a `workflowId` alongside the `orderId`. The UI would not need to call Conductor directly. It would query the MiniShop API, which would translate operational state into a safe product model.

@@ -110,103 +110,103 @@ Redis (idempotency)
 Processing complete
 ```
 
-## Ambientes de Experimentação Interativos de Arquitetura
+## Interactive Architecture Playgrounds
 
-O repositório agora inclui laboratórios interativos de arquitetura e simuladores de sistemas distribuídos para experimentação educacional e operacional. Esses ambientes tornam visíveis os limites entre arquitetura orientada a eventos, operações assistidas por IA, gateways operacionais seguros para MCP, engenharia de confiabilidade, rastreamento distribuído, consistência eventual, caixa de saída transacional e engenharia de confiabilidade do cliente.
+The repository now includes interactive architecture labs and distributed system simulators for educational and operational experimentation. These environments make the boundaries visible between event-driven architecture, AI-assisted operations, secure MCP operational gateways, reliability engineering, distributed tracing, eventual consistency, the transactional outbox, and customer reliability engineering.
 
-| Área de jogo | Descrição | URL |
+| Playground | Description | URL |
 |---|---|---|
-| Playground: Manual de Design de Sistemas Fullstack | Laboratório interativo de arquitetura de front-end para padrões de sistemas distribuídos, fluxos de trabalho de IA Ops, simulações de observabilidade e resiliência. | [Abrir laboratório](https://eventual-consistency-simulator-451663135116.us-west1.run.app/) |
-| Playground: Sandbox de Casos de Uso UML | Playground interativo de casos de uso UML que demonstra limites operacionais seguros para MCP, fluxos de trabalho de observabilidade e assistentes operacionais de IA. | [Abrir sandbox](https://api-gateway-sandbox-690799752664.us-east1.run.app/) |
-| Playground: Simulador de Sequências UML | Simulador de diagramas de sequência distribuídos que visualiza Caixa de Saída Transacional, streaming de eventos do Kafka, consistência eventual e processamento assíncrono. | [Abrir simulador](https://eventual-consistency-simulator-451663135116.us-west1.run.app/) |
+| Playground: Fullstack System Design Playbook | Interactive frontend architecture lab for distributed system patterns, AI Ops workflows, and observability and resilience simulations. | [Open lab](https://eventual-consistency-simulator-451663135116.us-west1.run.app/) |
+| Playground: UML Use Case Sandbox | Interactive UML use case playground demonstrating secure MCP operational boundaries, observability workflows, and AI operations assistants. | [Open sandbox](https://api-gateway-sandbox-690799752664.us-east1.run.app/) |
+| Playground: UML Sequence Simulator | Distributed sequence diagram simulator visualizing the Transactional Outbox, Kafka event streaming, eventual consistency, and asynchronous processing. | [Open simulator](https://eventual-consistency-simulator-451663135116.us-west1.run.app/) |
 
 ---
 
-## Vídeo de Demonstração do Sistema
+## System Demo Video
 
-O repositório inclui uma demonstração operacional completa mostrando streaming de eventos do Kafka, métricas do Prometheus, painéis do Grafana, rastreamento do Jaeger, gateways operacionais do MCP, análise operacional assistida por IA e simulações de fluxo de trabalho distribuído.
+The repository includes a complete operational demonstration showing Kafka event streaming, Prometheus metrics, Grafana dashboards, Jaeger tracing, MCP operational gateways, AI-assisted operational analysis, and distributed workflow simulations.
 
-**Demonstração:** [Assistir ao vídeo do sistema](https://youtu.be/M7fd6nJGt8g)
-
----
-
-## Laboratórios de Simulação de Engenharia
-
-Este repositório não é mais apenas um projeto de API de backend. Ele também funciona como um ambiente de experimentação de arquitetura inspirado na engenharia da Uber, na engenharia de confiabilidade da Stripe, nos sistemas distribuídos da Netflix e na engenharia da plataforma Mercado Livre.
-
-- Visualização de rastreamento distribuído
-- Simulações de streaming de eventos
-- Ambiente de teste educacional do Transactional Outbox
-- Confiabilidade e Experimentação SRE
-- Gateway operacional de IA seguro para MCP
-- Simulações de confiança do cliente e transparência operacional
-- Diagnóstico de arquitetura assistido por IA
-- Modelagem interativa de arquitetura UML
+**Demo:** [Watch the system video](https://youtu.be/M7fd6nJGt8g)
 
 ---
 
-## Capturas de tela e visualizações de arquitetura
+## Engineering Simulation Labs
 
-Espaço reservado para a galeria visual dos ambientes de teste e consoles de observabilidade:
+This repository has grown beyond a backend API project. It also serves as an architecture playground inspired by Uber engineering, Stripe reliability engineering, Netflix distributed systems, and Mercado Livre platform engineering.
 
-- Console de Operações de IA
-- Simulador de Caixa de Saída Transacional
-- Sandbox de Casos de Uso UML
-- Fluxo de Sequência Distribuída
-- Console de Confiabilidade do Cliente
-- Painel de Observabilidade do Grafana
-- Jaeger Rastreamento Distribuído
+- Distributed tracing visualization
+- Event streaming simulations
+- Educational Transactional Outbox sandbox
+- Reliability and SRE experimentation
+- Secure MCP AI operational gateway
+- Customer trust and operational transparency simulations
+- AI-assisted architecture diagnostics
+- Interactive UML architecture modeling
+
+---
+
+## Screenshots and Architecture Visualizations
+
+Placeholder for the visual gallery of sandboxes and observability consoles:
+
+- AI Operations Console
+- Transactional Outbox Simulator
+- UML Use Case Sandbox
+- Distributed Sequence Flow
+- Customer Reliability Console
+- Grafana Observability Dashboard
+- Jaeger Distributed Tracing
 
 ## Payment Consistency Saga
 
-O fluxo de pagamento usa uma Saga orquestrada com a API no caminho critico do checkout e o worker como orquestrador assíncrono de verificação. A API nunca publica diretamente no Kafka: ela persiste `orders`, `payments` e `outbox_events` na mesma transação; o outbox-worker publica os eventos.
+The payment flow uses an orchestrated Saga with the API on the checkout critical path and the worker orchestrating asynchronous verification. The API never publishes directly to Kafka: it persists `orders`, `payments`, and `outbox_events` in the same transaction; the outbox-worker publishes the events.
 
-Status de domínio usados:
+Domain statuses used:
 
 `PEDIDO_PENDENTE`, `PAGAMENTO_PENDENTE`, `PAGAMENTO_PENDENTE_VERIFICAÇÃO`, `PAGAMENTO_CONFIRMADO`, `PEDIDO_CONFIRMADO`, `PAGAMENTO_FALHOU`, `PEDIDO_CANCELADO`, `RECONCILIAÇÃO_NECESSÁRIA`.
 
-Novos tópicos Kafka:
+New Kafka topics:
 
 `payments.verification.requested`, `payments.confirmed`, `payments.failed`, `payments.verification.dlq`, `payments.reconciliation.needed`.
 
 ```mermaid
 flowchart TD
-  C[Cliente] --> A[API POST /orders]
-  A --> G[Primeira tentativa síncrona no gateway]
+  C[Client] --> A[API POST /orders]
+  A --> G[First synchronous gateway attempt]
 
-  G -->|confirmado| TX1[Transação Postgres: order PEDIDO_CONFIRMADO + payment PAGAMENTO_CONFIRMADO + outbox PaymentConfirmed]
+  G -->|confirmed| TX1[Postgres transaction: order PEDIDO_CONFIRMADO + payment PAGAMENTO_CONFIRMADO + outbox PaymentConfirmed]
   TX1 --> O1[Outbox Worker]
   O1 --> K1[Kafka payments.confirmed]
 
-  G -->|falhou| TX2[Transação Postgres: order PEDIDO_CANCELADO + payment PAGAMENTO_FALHOU + outbox PaymentFailed]
+  G -->|failed| TX2[Postgres transaction: order PEDIDO_CANCELADO + payment PAGAMENTO_FALHOU + outbox PaymentFailed]
   TX2 --> O2[Outbox Worker]
   O2 --> K2[Kafka payments.failed]
 
-  G -->|timeout ou desconhecido| TX3[Transação Postgres: order PEDIDO_PENDENTE + payment PAGAMENTO_PENDENTE_VERIFICAÇÃO + outbox PaymentVerificationRequested]
+  G -->|timeout or unknown| TX3[Postgres transaction: order PEDIDO_PENDENTE + payment PAGAMENTO_PENDENTE_VERIFICAÇÃO + outbox PaymentVerificationRequested]
   TX3 --> O3[Outbox Worker]
   O3 --> K3[Kafka payments.verification.requested]
 
-  K3 --> W[Worker de verificação]
-  W --> R[Redis lock/idempotência]
-  R --> Q[Polling no gateway por idempotencyKey ou transactionReference]
-  Q -->|confirmado| WC[DB + outbox PaymentConfirmed]
-  Q -->|rejeitado ou não encontrado| WF[DB + outbox PaymentFailed]
-  Q -->|erro temporário| RET[Retry com backoff]
-  RET -->|limite excedido| DLQ[Kafka payments.verification.dlq]
+  K3 --> W[Verification worker]
+  W --> R[Redis lock/idempotency]
+  R --> Q[Poll gateway by idempotencyKey or transactionReference]
+  Q -->|confirmed| WC[DB + outbox PaymentConfirmed]
+  Q -->|rejected or not found| WF[DB + outbox PaymentFailed]
+  Q -->|temporary error| RET[Retry with backoff]
+  RET -->|limit exceeded| DLQ[Kafka payments.verification.dlq]
 
   GW[Gateway webhook] --> WH[API POST /payments/webhooks]
-  WH --> WHI[Dedup em payment_webhook_events]
-  WHI -->|confirmado/falhou/desconhecido| WHTX[DB + outbox PaymentConfirmed, PaymentFailed ou PaymentVerificationRequested]
+  WH --> WHI[Dedup in payment_webhook_events]
+  WHI -->|confirmed/failed/unknown| WHTX[DB + outbox PaymentConfirmed, PaymentFailed or PaymentVerificationRequested]
 
-  B[Job periódico de reconciliação] --> P[Busca payments pendentes ou em RECONCILIAÇÃO_NECESSÁRIA]
-  P --> BG[Compara com registros do gateway]
-  BG -->|corrige| BOK[DB + outbox PaymentConfirmed ou PaymentFailed]
-  BG -->|inconsistente| ALERT[Marca RECONCILIAÇÃO_NECESSÁRIA + outbox payments.reconciliation.needed + métrica/log]
+  B[Periodic reconciliation job] --> P[Fetch pending payments or those in RECONCILIAÇÃO_NECESSÁRIA]
+  P --> BG[Compare with gateway records]
+  BG -->|correct| BOK[DB + outbox PaymentConfirmed or PaymentFailed]
+  BG -->|inconsistent| ALERT[Mark RECONCILIAÇÃO_NECESSÁRIA + outbox payments.reconciliation.needed + metric/log]
 ```
 
-Observabilidade adicionada:
+Added observability:
 
-`payment_webhooks_total`, `payment_verification_total`, `payment_verification_retries_total`, `payment_verification_dlq_total`, `payment_reconciliation_total` e `payment_verification_duration_ms`, além de spans `payments.verify` e logs com `correlationId`, `paymentId` e referência do gateway.
+`payment_webhooks_total`, `payment_verification_total`, `payment_verification_retries_total`, `payment_verification_dlq_total`, `payment_reconciliation_total`, and `payment_verification_duration_ms`, along with `payments.verify` spans and logs containing `correlationId`, `paymentId`, and the gateway reference.
 
 ## Core Components
 
@@ -507,15 +507,15 @@ HTTP → Kafka → Worker → Database
 
 ## Canary Release
 
-O projeto agora inclui uma estrategia leve de Canary Release para a API usando Ingress NGINX ponderado, labels de versao, metricas Prometheus por coorte e tags OpenTelemetry.
+The project now includes a lightweight Canary Release strategy for the API using weighted Ingress NGINX routing, version labels, Prometheus metrics by cohort, and OpenTelemetry tags.
 
-Documentacao operacional:
+Operational documentation:
 
 ```ts
 docs/canary-release.md
 ```
 
-## Testes
+## Tests
 
 unit tests
 
@@ -675,7 +675,7 @@ Kafka cluster inside Kubernetes
 Multi-region replication
 AI agent for auto-debugging (MCP + LLM)
 
-## Autor - Thiago Reis Lima
+## Author - Thiago Reis Lima
 Software Engineer & AI Systems Builder
 Focused on scalable architectures, automation, and real-world systems.
 

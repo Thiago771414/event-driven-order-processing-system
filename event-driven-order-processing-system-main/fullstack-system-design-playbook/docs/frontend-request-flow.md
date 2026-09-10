@@ -1,18 +1,18 @@
-# Fluxo de Requisições do Frontend
+# Frontend Request Flow
 
-Este documento mostra como uma acao React atravessa a arquitetura ate chegar ao
-backend distribuido MiniShop.
+This document shows how a React action moves through the architecture to reach
+the MiniShop distributed backend.
 
-## Fluxo de comunicacao da API
+## API Communication Flow
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant User as Usuário
-  participant Component as Componente React
+  participant User as User
+  participant Component as React Component
   participant Hook as Hook
-  participant Service as Camada de Serviço
-  participant Client as Cliente de API
+  participant Service as Service Layer
+  participant Client as API Client
   participant API as MiniShop API
   participant DB as PostgreSQL
   participant Outbox as Outbox Worker
@@ -20,71 +20,71 @@ sequenceDiagram
   participant Worker
   participant Redis
 
-  User->>Component: ação de UI
-  Component->>Hook: chama intenção de domínio
+  User->>Component: UI action
+  Component->>Hook: invoke domain intent
   Hook->>Service: createOrder(input)
-  Service->>Client: POST /orders tipado
-  Client->>API: HTTP com cabeçalhos de correlação/idempotência
-  API->>DB: transação order + payment + outbox
+  Service->>Client: typed POST /orders
+  Client->>API: HTTP with correlation/idempotency headers
+  API->>DB: order + payment + outbox transaction
   DB-->>API: commit
-  API-->>Client: resposta com status conhecido
-  Client-->>Service: modelo tipado
-  Service-->>Hook: resultado de domínio
-  Hook-->>Component: estado atualizado
-  Outbox->>DB: lê eventos pendentes
-  Outbox->>Kafka: publica evento durável
-  Kafka->>Worker: entrega evento
-  Worker->>Redis: idempotência/cache/lock
-  Worker->>DB: aplica resultado assíncrono
+  API-->>Client: response with known status
+  Client-->>Service: typed model
+  Service-->>Hook: domain result
+  Hook-->>Component: updated state
+  Outbox->>DB: read pending events
+  Outbox->>Kafka: publish durable event
+  Kafka->>Worker: deliver event
+  Worker->>Redis: idempotency/cache/lock
+  Worker->>DB: apply asynchronous result
 ```
 
-## Ciclo de vida de requisicoes assincronas
+## Asynchronous Request Lifecycle
 
-1. A UI captura a intencao do usuario.
-2. O hook atualiza estado temporario para `submitting`.
-3. O servico monta a chamada de dominio sem conhecer a interface.
-4. O cliente de API aplica URL base, cabeçalhos, timeout e politica de retry.
-5. A API valida o contrato e persiste no PostgreSQL.
-6. O backend grava eventos via outbox para publicacao posterior no Kafka.
-7. A resposta HTTP devolve o estado conhecido naquele momento.
-8. A UI renderiza `pending`, `confirmed`, `failed` ou outro estado explicito.
-9. Leitura posterior por `GET /orders/:id` reconcilia o snapshot do cliente.
+1. The UI captures user intent.
+2. The hook updates temporary state to `submitting`.
+3. The service builds the domain call without knowing the interface.
+4. The API client applies the base URL, headers, timeout, and retry policy.
+5. The API validates the contract and persists data in PostgreSQL.
+6. The backend writes events through the outbox for later publication to Kafka.
+7. The HTTP response returns the state known at that moment.
+8. The UI renders `pending`, `confirmed`, `failed`, or another explicit state.
+9. A subsequent read through `GET /orders/:id` reconciles the client snapshot.
 
-## Responsabilidades por camada
+## Responsibilities by Layer
 
-| Camada | Pode fazer | Nao deve fazer |
+| Layer | Can do | Must not do |
 | --- | --- | --- |
-| Componentes | Renderizar e coletar intenção | Chamar `fetch` diretamente |
-| Hooks | Orquestrar tela, estado e serviços | Conhecer Redis, Kafka ou SQL |
-| Serviços | Encapsular contratos da API | Manipular DOM ou UI |
-| Cliente de API | HTTP, cabeçalhos, timeout, retry, erros | Regras visuais |
-| Stores | Estado temporario do cliente | Ser fonte de verdade |
-| Adaptadores de armazenamento | Persistencia local | Acessar backend diretamente |
+| Components | Render and collect intent | Call `fetch` directly |
+| Hooks | Orchestrate the screen, state, and services | Know Redis, Kafka, or SQL |
+| Services | Encapsulate API contracts | Manipulate the DOM or UI |
+| API client | HTTP, headers, timeout, retries, errors | Visual rules |
+| Stores | Temporary client state | Be the source of truth |
+| Storage adapters | Local persistence | Access the backend directly |
 
-## Cabeçalhos e rastreamento
+## Headers and Tracing
 
-`src/services/apiClient.ts` centraliza:
+`src/services/apiClient.ts` centralizes:
 
 - `Authorization`;
 - `X-Correlation-Id`;
 - `X-Request-Id`;
 - `X-Idempotency-Key`;
 - `traceparent`;
-- timeout com `AbortController`;
-- retries para metodos seguros ou escritas idempotentes;
-- interceptadores de requisição e resposta.
+- timeout with `AbortController`;
+- retries for safe methods or idempotent writes;
+- request and response interceptors.
 
-Isso permite observar uma acao do navegador ate a API e, depois, ate workers e
-eventos. O frontend nao precisa conhecer a implementacao interna do tracing no
-backend.
+This makes it possible to trace an action from the browser to the API and then to
+workers and events. The frontend does not need to know the internal backend
+tracing implementation.
 
-## Como rodar backend e frontend localmente
+## Running the Backend and Frontend Locally
 
-O MiniShop backend fica no repositorio irmao
+The MiniShop backend is in the sibling repository
 `event-driven-order-processing-system-main/event-driven-order-processing-system-main`.
-Este playbook frontend fica em `fullstack-system-design-playbook`.
+This frontend playbook is in `fullstack-system-design-playbook`.
 
-Terminal 1, infraestrutura do backend:
+Terminal 1, backend infrastructure:
 
 ```bash
 cd event-driven-order-processing-system-main/event-driven-order-processing-system-main
@@ -106,7 +106,7 @@ cd event-driven-order-processing-system-main/event-driven-order-processing-syste
 pnpm -C apps/outbox-worker start:dev
 ```
 
-Terminal 4, worker Kafka:
+Terminal 4, Kafka worker:
 
 ```bash
 cd event-driven-order-processing-system-main/event-driven-order-processing-system-main
@@ -121,26 +121,26 @@ pnpm install
 pnpm dev
 ```
 
-Opcionalmente, crie `.env.local` no frontend:
+Optionally, create `.env.local` in the frontend:
 
 ```bash
 VITE_MINISHOP_API_URL=http://localhost:3000
 ```
 
-URLs locais esperadas:
+Expected local URLs:
 
-| Servico | URL |
+| Service | URL |
 | --- | --- |
 | Frontend | `http://localhost:5173` |
 | API | `http://localhost:3000` |
-| Saúde da API | `http://localhost:3000/healthz` |
+| API health | `http://localhost:3000/healthz` |
 | Kafka UI | `http://localhost:8085` |
 | Prometheus | `http://localhost:9090` |
 | Grafana | `http://localhost:3001` |
 | Jaeger | `http://localhost:16686` |
 
-## Contrato acima da implementacao
+## Contract over Implementation
 
-A API e o contrato entre a experiencia do usuario e os sistemas distribuidos.
-Enquanto Kafka, Redis, workers e PostgreSQL evoluem atras da API, o frontend
-continua dependente de modelos TypeScript, servicos e estados de dominio claros.
+The API is the contract between the user experience and distributed systems.
+While Kafka, Redis, workers, and PostgreSQL evolve behind the API, the frontend
+continues to depend on clear TypeScript models, services, and domain states.

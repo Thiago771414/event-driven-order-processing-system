@@ -1,98 +1,98 @@
-# Lições de Design de Sistemas
+# System Design Lessons
 
-Este playbook foca nas lições de engenharia que conectam arquitetura de frontend
-com desenho de backend distribuído.
+This playbook focuses on engineering lessons that connect frontend architecture
+with distributed backend design.
 
-## 1. A API é o Contrato
+## 1. The API Is the Contract
 
-A API é onde a experiência do usuário encontra sistemas distribuídos. Ela deve
-expor identificadores estáveis, valores de status, categorias de erro e
-expectativas de retry.
+The API is where the user experience meets distributed systems. It should
+expose stable identifiers, status values, error categories, and
+retry expectations.
 
-Um frontend não consegue renderizar estados honestos de produto se o backend
-esconde estados pendentes, falhos ou desconhecidos atrás de respostas genéricas
-de sucesso.
+A frontend cannot render accurate product states if the backend
+hides pending, failed, or unknown states behind generic success
+responses.
 
-## 2. O Estado do Frontend é Temporário
+## 2. Frontend State Is Temporary
 
-Estado React serve para interação e renderização. Ele não é durável e não deve
-ser tratado como verdade de negócio.
+React state supports interaction and rendering. It is not durable and should
+not be treated as business truth.
 
-Armazenamento do navegador pode preservar continuidade, mas continua local e
-potencialmente antigo.
+Browser storage can preserve continuity, but it remains local and
+potentially stale.
 
-## 3. PostgreSQL Guarda a Verdade Durável
+## 3. PostgreSQL Stores Durable Truth
 
-Registros de negócio pertencem a um armazenamento transacional durável.
-PostgreSQL guarda pedidos, pagamentos, eventos de outbox e marcadores de
-reconciliação.
+Business records belong in durable transactional storage.
+PostgreSQL stores orders, payments, outbox events, and reconciliation
+markers.
 
-Redis e Kafka apoiam o sistema, mas não substituem o sistema de registro.
+Redis and Kafka support the system, but they do not replace the system of record.
 
-## 4. Eventos Precisam de Disciplina Transacional
+## 4. Events Require Transactional Discipline
 
-Publicar diretamente a partir de handlers de requisição cria janelas de falha. O
-padrão outbox fecha a lacuna entre estado do banco e publicação de eventos.
+Publishing directly from request handlers creates failure windows. The
+outbox pattern closes the gap between database state and event publication.
 
-O estado é confirmado primeiro. Eventos são publicados depois do commit por um
-worker dedicado.
+State is committed first. Events are published after the commit by a
+dedicated worker.
 
-## 5. Processamento Assíncrono Exige Idempotência
+## 5. Asynchronous Processing Requires Idempotency
 
-Consumidores Kafka devem assumir duplicatas. Clientes HTTP podem retentar.
-Gateways de pagamento podem enviar webhooks duplicados.
+Kafka consumers should assume duplicates. HTTP clients may retry.
+Payment gateways may send duplicate webhooks.
 
-Idempotência transforma entregas repetidas em comportamento seguro.
+Idempotency makes repeated delivery safe.
 
-## 6. Desconhecido é um Estado Real
+## 6. Unknown Is a Real State
 
-Sistemas de pagamento precisam representar resultados desconhecidos. Timeout não
-significa sucesso nem falha.
+Payment systems need to represent unknown outcomes. A timeout does not
+mean success or failure.
 
-Bons sistemas modelam:
+Good systems model:
 
-- pendente de verificação;
-- retentando;
-- falhou;
-- confirmado;
-- reconciliação necessária.
+- pending verification;
+- retrying;
+- failed;
+- confirmed;
+- reconciliation needed.
 
-## 7. Cache é uma Decisão de Consistência
+## 7. Caching Is a Consistency Decision
 
-Cache não é apenas sobre velocidade. Cada cache precisa ter dono, estratégia de
-invalidação, expectativa de frescor e fallback para a verdade.
+Caching is not just about speed. Every cache needs an owner, an invalidation
+strategy, freshness expectations, and a fallback to the source of truth.
 
-Cache do navegador melhora UX. Redis melhora desempenho e segurança no backend.
-PostgreSQL continua autoritativo.
+Browser caching improves UX. Redis improves backend performance and operational safety.
+PostgreSQL remains authoritative.
 
-## 8. Confiabilidade é Desenhada Antes da Falha
+## 8. Reliability Is Designed Before Failure
 
-Retry, DLQ, backoff, idempotência e reconciliação não são tarefas de limpeza.
-São elementos centrais de design.
+Retries, DLQs, backoff, idempotency, and reconciliation are not cleanup tasks.
+They are core design elements.
 
-O sistema deve definir o que acontece quando cada dependência está lenta,
-indisponível, duplicada ou inconsistente.
+The system should define what happens when each dependency is slow,
+unavailable, produces duplicates, or returns inconsistent results.
 
-## 9. Observabilidade Faz Parte da Arquitetura
+## 9. Observability Is Part of the Architecture
 
-Métricas mostram o formato do sistema. Traces mostram caminhos de requisição.
-Logs mostram fatos detalhados.
+Metrics show system behavior. Traces show request paths.
+Logs show detailed facts.
 
-Um fluxo de trabalho distribuído não está completo se engenheiros não conseguem explicá-lo
-durante operação normal e durante falhas.
+A distributed workflow is not complete unless engineers can explain it
+during normal operation and during failures.
 
-## 10. Entrega Progressiva Precisa de Proteções
+## 10. Progressive Delivery Needs Guardrails
 
-Release canário funciona melhor com saúde mensurável, contratos de evento
-estáveis e rollback rápido.
+Canary releases work best with measurable health, stable event contracts,
+and fast rollback.
 
-Para decisões de pagamento, feature flags e allowlists muitas vezes são mais
-seguras do que rollout percentual amplo.
+For payment decisions, feature flags and allowlists are often safer
+than a broad percentage-based rollout.
 
-## 11. Design Fullstack é Um Sistema
+## 11. Fullstack Design Is One System
 
-Arquitetura de frontend e backend não deve ser ensinada como mundos separados.
+Frontend and backend architecture should not be taught as separate worlds.
 
-O botão de checkout, o contrato da API, a transação no banco, o evento de outbox,
-o worker Kafka, a chave de idempotência no Redis e o dashboard Grafana fazem
-parte de um único sistema percebido pelo usuário.
+The checkout button, API contract, database transaction, outbox event,
+Kafka worker, Redis idempotency key, and Grafana dashboard are all
+part of a single system as experienced by the user.

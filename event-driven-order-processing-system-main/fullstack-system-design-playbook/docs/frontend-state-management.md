@@ -1,89 +1,89 @@
-# Gerenciamento de Estado no Frontend
+# Frontend State Management
 
-Este documento explica como o estado do frontend deve ser tratado neste
-playbook React + TypeScript.
+This document explains how frontend state should be handled in this
+React + TypeScript playbook.
 
-## Filosofia
+## Philosophy
 
-O estado do frontend e temporario.
+Frontend state is temporary.
 
-Ele existe para renderizar a experiencia atual, responder a interacoes do
-usuario e manter pequenas transicoes de interface. Ele nao substitui a API, nao
-substitui o PostgreSQL e nao deve tentar reconstruir toda a verdade de negocio
-no navegador.
+It exists to render the current experience, respond to user interactions,
+and manage small interface transitions. It does not replace the API or
+PostgreSQL, and it should not attempt to reconstruct all business truth
+in the browser.
 
-O modelo mental usado neste projeto:
+The mental model used in this project:
 
-| Camada | Responsabilidade | Fonte de verdade |
+| Layer | Responsibility | Source of truth |
 | --- | --- | --- |
-| React state | Estado de renderizacao e interacao | Nao |
-| Stores do cliente | Estado compartilhado da sessao atual | Nao |
-| LocalStorage | Persistencia local pequena | Nao |
-| IndexedDB | Persistencia local maior/offline/cache | Nao |
-| Redis | Cache, locks e idempotencia do backend | Nao |
-| PostgreSQL | Registro duravel de negocio | Sim |
+| React state | Rendering and interaction state | No |
+| Client stores | Shared state for the current session | No |
+| LocalStorage | Small local persistence | No |
+| IndexedDB | Larger local persistence/offline storage/cache | No |
+| Redis | Backend cache, locks, and idempotency | No |
+| PostgreSQL | Durable business records | Yes |
 
-## Ciclo de vida do estado no React
+## React State Lifecycle
 
-1. O componente renderiza dados recebidos por props, hooks ou stores.
-2. O usuario executa uma acao, como adicionar produto ao carrinho.
-3. Um hook coordena a acao e atualiza uma store temporaria.
-4. Quando a acao cruza o limite do backend, o hook chama um servico.
-5. O serviço usa o cliente de API central.
-6. A resposta da API atualiza a store com o estado conhecido mais recente.
-7. Uma nova leitura da API pode substituir dados locais considerados antigos.
+1. The component renders data received through props, hooks, or stores.
+2. The user performs an action, such as adding a product to the cart.
+3. A hook coordinates the action and updates a temporary store.
+4. When the action crosses the backend boundary, the hook calls a service.
+5. The service uses the central API client.
+6. The API response updates the store with the latest known state.
+7. A new API read can replace local data considered stale.
 
-Esse ciclo mantem componentes simples. Componentes nao chamam `fetch`, nao sabem
-como cabeçalhos sao montados e nao conhecem Kafka, Redis ou PostgreSQL.
+This cycle keeps components simple. Components do not call `fetch`, do not know
+how headers are assembled, and do not know Kafka, Redis, or PostgreSQL.
 
-## Estado temporario da interface
+## Temporary Interface State
 
-Estado temporario da UI inclui:
+Temporary UI state includes:
 
-- menu aberto ou fechado;
-- aba selecionada;
-- campos de formulario em edicao;
-- mensagens de validacao;
-- indicadores de carregamento;
-- estado otimista de uma acao em andamento.
+- open or closed menu;
+- selected tab;
+- form fields being edited;
+- validation messages;
+- loading indicators;
+- optimistic state for an action in progress.
 
-Esse estado normalmente vive dentro de componentes, hooks ou stores simples. Ele
-pode desaparecer em refresh sem comprometer a consistencia do sistema.
+This state usually lives in components, hooks, or simple stores. It
+can disappear on refresh without compromising system consistency.
 
-## Estado compartilhado da sessao
+## Shared Session State
 
-`src/state/cartStore.ts` representa o carrinho da sessao atual. Ele e util para
-experiencia do usuario, mas o backend ainda precisa validar itens, precos,
-estoque e pagamento.
+`src/state/cartStore.ts` represents the current session's cart. It supports the
+user experience, but the backend still needs to validate items, prices,
+inventory, and payment.
 
-`src/state/orderStore.ts` representa o ciclo de vida conhecido de um pedido. Ele
-pode dizer que um pedido foi aceito pela API, esta pendente de processamento
-assincrono, foi confirmado, falhou ou precisa de reconciliacao. Mesmo assim, a
-fonte final continua sendo a API lendo do backend.
+`src/state/orderStore.ts` represents the known lifecycle of an order. It
+can indicate that an order was accepted by the API, is pending asynchronous
+processing, was confirmed, failed, or needs reconciliation. Even so, the
+ultimate authority remains the API reading from the backend.
 
-## Fonte de verdade do backend
+## Backend Source of Truth
 
-PostgreSQL e a fonte da verdade porque guarda o estado duravel de pedidos,
-pagamentos e outbox. Redis acelera o backend, mas nao e ledger de negocio. Kafka
-transporta eventos entre partes do sistema, mas nao e o contrato direto da UI.
+PostgreSQL is the source of truth because it stores durable order,
+payment, and outbox state. Redis accelerates the backend, but it is not a business ledger. Kafka
+transports events between parts of the system, but it is not the UI's direct contract.
 
-O frontend deve confiar no backend para:
+The frontend should rely on the backend for:
 
-- validacao de negocio;
-- calculo definitivo de totais;
-- status final de pagamento;
-- reconciliacao de estados desconhecidos;
-- consistencia entre pedidos, pagamentos e eventos.
+- business validation;
+- definitive calculation of totals;
+- final payment status;
+- reconciliation of unknown states;
+- consistency between orders, payments, and events.
 
-## Regra pratica
+## Rule of Thumb
 
-Mantenha o frontend sem estado sempre que possivel. Quando estado for necessario,
-deixe claro se ele e:
+Keep the frontend stateless whenever possible. When state is necessary,
+make it clear whether it is:
 
-- temporario de UI;
-- persistencia local do navegador;
-- snapshot de resposta da API;
-- verdade duravel do backend.
+- temporary UI state;
+- local browser persistence;
+- an API response snapshot;
+- durable backend truth.
 
-Essa separacao reduz acoplamento e facilita evoluir a arquitetura sem transformar
-componentes React em mini backends.
+This separation reduces coupling and makes it easier to evolve the architecture
+without turning React components into miniature backends.

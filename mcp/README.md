@@ -1,2 +1,2 @@
 “Observability (Prometheus/Grafana/Jaeger)”
-“MCP (AI Tooling) — Server MCP para consultas em Prometheus/Grafana”
+“MCP (AI Tooling) — MCP Server for Prometheus/Grafana queries”

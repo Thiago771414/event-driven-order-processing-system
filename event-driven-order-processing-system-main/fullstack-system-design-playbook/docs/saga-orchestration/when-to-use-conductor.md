@@ -1,35 +1,35 @@
-# Quando Usar Netflix Conductor
+# When to Use Netflix Conductor
 
-O Netflix Conductor e util quando o fluxo de negocio precisa ser coordenado, observado e retomado como uma execucao explicita. Ele ajuda quando a complexidade do workflow ja existe no dominio e precisa ficar operavel.
+Netflix Conductor is useful when a business flow needs to be coordinated, observed, and resumed as an explicit execution. It helps when workflow complexity already exists in the domain and needs to be manageable in operation.
 
-## Use um mecanismo de workflow quando
+## Use a Workflow Engine When
 
-- o fluxo de trabalho tiver muitas etapas;
-- a logica de compensacao for complexa;
-- as tentativas e os tempos limite precisarem ser visiveis;
-- os operadores precisarem inspecionar o fluxo de trabalho;
-- varios microsservicos participarem;
-- a auditabilidade for importante.
+- the workflow has many steps;
+- compensation logic is complex;
+- attempts and timeouts need to be visible;
+- operators need to inspect the workflow;
+- multiple microservices participate;
+- auditability matters.
 
-Sinais praticos de que o Conductor pode ajudar:
+Practical signs that Conductor can help:
 
-- a equipe precisa saber em qual etapa cada checkout parou;
-- ha muitas transicoes entre pagamento, estoque, pedido e notificacao;
-- falhas exigem reembolso, cancelamento, reprocessamento ou pausa manual;
-- o historico da saga precisa ser consultavel por suporte, operacao ou auditoria;
-- retries invisiveis em logs ja nao sao suficientes.
+- the team needs to know which step each checkout stopped at;
+- there are many transitions between payment, inventory, orders, and notifications;
+- failures require refunds, cancellation, reprocessing, or manual pauses;
+- saga history needs to be accessible to support, operations, or auditing;
+- retries that are only visible in logs are no longer sufficient.
 
-## Evite quando
+## Avoid It When
 
-- o projeto tiver apenas um ou dois servicos simples;
-- a coreografia do Kafka for suficiente;
-- a complexidade operacional nao for justificada;
-- a equipe nao precisar de visibilidade do fluxo de trabalho.
+- the project has only one or two simple services;
+- Kafka choreography is sufficient;
+- the operational complexity is not justified;
+- the team does not need workflow visibility.
 
-Tambem evite quando a equipe ainda nao tem maturidade operacional para manter mais uma peca de infraestrutura. Um workflow engine simplifica algumas complexidades, mas adiciona outras: operacao, monitoramento, versionamento de workflows, seguranca, backup e governanca.
+Also avoid it when the team lacks the operational maturity to maintain another infrastructure component. A workflow engine simplifies some complexities but adds others: operations, monitoring, workflow versioning, security, backups, and governance.
 
-## Regra pratica para o MiniShop
+## Rule of Thumb for MiniShop
 
-No estado atual do playbook, Kafka, outbox, Redis, PostgreSQL, workers e observabilidade ja demonstram confiabilidade orientada a eventos. O Conductor faria sentido em uma evolucao onde o checkout tivesse muitos passos de negocio, compensacoes recorrentes e necessidade real de inspecao operacional por workflow.
+In the playbook's current state, Kafka, the outbox, Redis, PostgreSQL, workers, and observability already demonstrate event-driven reliability. Conductor would make sense in a future version where checkout has many business steps, recurring compensation, and a real need for operational inspection of each workflow.
 
-Para aprendizado, manter o Conductor como documentacao e mock visual e uma escolha intencional: a ideia fica clara sem transformar o projeto em um ambiente de infraestrutura pesada.
+For learning, keeping Conductor as documentation and a visual mock is an intentional choice: the idea remains clear without turning the project into an infrastructure-heavy environment.

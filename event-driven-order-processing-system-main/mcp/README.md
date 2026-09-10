@@ -1,16 +1,16 @@
 # MiniShop Observability MCP
 
-Server MCP demonstrativo para o Console de Operacoes com IA do MiniShop.
+A demonstration MCP server for the MiniShop AI Operations Console.
 
-O assistente nao recebe acesso direto a Prometheus, Kafka, Jaeger, DLQ, shell,
-arquivos, segredos ou SQL. Toda investigacao passa por ferramentas seguras,
-agregadas e com parametros estreitos.
+The assistant does not receive direct access to Prometheus, Kafka, Jaeger, the DLQ, the shell,
+files, secrets, or SQL. All investigation goes through safe tools that return
+aggregated data and accept narrowly scoped parameters.
 
-Na segunda etapa, o mesmo gateway tambem alimenta a Trust & Experience Layer:
-metricas tecnicas sao devolvidas com interpretacao de confianca, previsibilidade,
-transparencia e impacto operacional ao cliente.
+In the second stage, the same gateway also supports the Trust & Experience Layer:
+technical metrics are returned with interpretations of trust, predictability,
+transparency, and operational impact on customers.
 
-## Ferramentas permitidas
+## Allowed Tools
 
 - `queryPrometheusMetrics`
 - `getKafkaLag`
@@ -21,35 +21,35 @@ transparencia e impacto operacional ao cliente.
 - `getRetryMetrics`
 - `getPublicSystemStatus`
 
-## Capacidades bloqueadas
+## Blocked Capabilities
 
-- SQL bruto
-- acesso ao sistema de arquivos
-- comandos arbitrarios de shell
-- segredos
-- variaveis de ambiente
-- consultas irrestritas
+- raw SQL
+- filesystem access
+- arbitrary shell commands
+- secrets
+- environment variables
+- unrestricted queries
 - PII
-- headers internos
+- internal headers
 - stack traces
-- payloads brutos de mensagens
+- raw message payloads
 
-Se uma solicitacao tentar injecao, exfiltracao, acesso interno ou bypass de
-politica, a resposta e:
+If a request attempts injection, exfiltration, internal access, or a policy
+bypass, the response is:
 
 ```text
 Access denied by operational security policy.
 ```
 
-## Protecoes
+## Safeguards
 
-- allowlist explicita de ferramentas
-- validacao de parametros com Zod
-- denylist de payloads perigosos
-- sanitizacao recursiva de respostas
-- rate limiting simples por ferramenta
-- protecoes inspiradas em OWASP Top 10 para injection, acesso quebrado,
-  exposicao de dados sensiveis e SSRF
+- explicit tool allowlist
+- parameter validation with Zod
+- denylist of dangerous payloads
+- recursive response sanitization
+- simple per-tool rate limiting
+- safeguards inspired by the OWASP Top 10 against injection, broken access control,
+  sensitive data exposure, and SSRF
 
 ## Scripts
 

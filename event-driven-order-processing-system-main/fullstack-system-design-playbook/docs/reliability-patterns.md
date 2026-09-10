@@ -1,130 +1,130 @@
-# Padrões de Confiabilidade
+# Reliability Patterns
 
-Confiabilidade neste playbook significa preservar correção diante de retries,
-falhas parciais, entrega duplicada, processamento atrasado e rollout gradual.
+Reliability in this playbook means preserving correctness in the face of retries,
+partial failures, duplicate delivery, delayed processing, and gradual rollout.
 
-## Padrão Outbox
+## Outbox Pattern
 
-O padrão outbox grava estado de domínio e intenção de evento na mesma transação
-de banco.
+The outbox pattern writes domain state and event intent in the same database
+transaction.
 
 ```mermaid
 flowchart LR
-  A[Requisição API] --> B[Transação DB]
-  B --> C[Grava Pedido]
-  B --> D[Grava Evento Outbox]
+  A[API Request] --> B[DB Transaction]
+  B --> C[Write Order]
+  B --> D[Write Outbox Event]
   C --> E[Commit]
   D --> E
-  E --> F[Outbox Worker Publica]
+  E --> F[Outbox Worker Publishes]
   F --> G[Kafka]
 ```
 
-Isso evita a falha comum em que o commit do banco acontece, mas a publicação do
-evento falha.
+This prevents the common failure where the database commit succeeds but event
+publication fails.
 
-## Idempotência
+## Idempotency
 
-Idempotência torna execuções repetidas seguras.
+Idempotency makes repeated execution safe.
 
-Use em:
+Use it for:
 
-- submissão de checkout;
-- tentativas de pagamento;
-- processamento de webhooks;
-- consumidores Kafka;
-- reprocessamento de DLQ.
+- checkout submission;
+- payment attempts;
+- webhook processing;
+- Kafka consumers;
+- DLQ reprocessing.
 
-Chaves comuns:
+Common keys:
 
-- chave de idempotência da requisição;
+- request idempotency key;
 - order ID;
 - payment ID;
-- referência de transação do gateway;
+- gateway transaction reference;
 - event ID.
 
-## Retry com Backoff
+## Retry with Backoff
 
-Retries devem respeitar a saúde das dependências. Loops de retry imediato podem
-transformar uma pequena indisponibilidade em uma maior.
+Retries should respect dependency health. Immediate retry loops can
+turn a small outage into a larger one.
 
-Política recomendada de retry:
+Recommended retry policy:
 
-- classificar erros como retentáveis ou terminais;
-- usar backoff exponencial com jitter;
-- definir número máximo de tentativas;
-- emitir métricas de retry;
-- preservar correlation ID entre tentativas.
+- classify errors as retryable or terminal;
+- use exponential backoff with jitter;
+- set a maximum number of attempts;
+- emit retry metrics;
+- preserve the correlation ID across attempts.
 
 ## DLQ
 
-DLQ é usada quando os retries se esgotam ou quando o processamento é inseguro.
+A DLQ is used when retries are exhausted or processing is unsafe.
 
-A DLQ não é uma lixeira. Ela é uma fila operacional que exige inspeção, alertas e
-replay controlado.
+The DLQ is not a dumping ground. It is an operational queue that requires inspection,
+alerts, and controlled replay.
 
-## Consistência Eventual
+## Eventual Consistency
 
-Consistência eventual significa que o modelo de escrita e o estado de leitura ou
-processamento downstream podem diferir temporariamente.
+Eventual consistency means that the write model and downstream read or
+processing state can differ temporarily.
 
-O frontend deve mostrar estados honestos:
+The frontend should show accurate states:
 
-- pendente;
-- processando;
-- confirmado;
-- falhou;
-- verificação necessária;
-- reconciliação necessária.
+- pending;
+- processing;
+- confirmed;
+- failed;
+- verification required;
+- reconciliation needed.
 
-## Release Canário
+## Canary Release
 
-Release canário envia uma pequena porcentagem de tráfego para uma nova versão
-antes de liberar amplamente.
+A canary release sends a small percentage of traffic to a new version
+before a broad rollout.
 
 ```mermaid
 flowchart TD
-  U[Usuários] --> I[Ingress]
-  I -->|Tráfego estável| S[API Estável]
-  I -->|Pequena porcentagem| C[API Canário]
+  U[Users] --> I[Ingress]
+  I -->|Stable traffic| S[Stable API]
+  I -->|Small percentage| C[Canary API]
   S --> DB[(PostgreSQL + Outbox)]
   C --> DB
   DB --> OW[Outbox Worker]
   OW --> K[Kafka]
   K --> W[Workers]
-  S --> M[Métricas Prometheus]
+  S --> M[Prometheus Metrics]
   C --> M
-  M --> G[Comparação Grafana]
-  G --> D{Canário saudável?}
-  D -->|Sim| P[Promove gradualmente]
-  D -->|Não| R[Rollback definindo tráfego como 0]
+  M --> G[Grafana Comparison]
+  G --> D{Canary healthy?}
+  D -->|Yes| P[Promote gradually]
+  D -->|No| R[Roll back by setting traffic to 0]
 ```
 
-Canário é mais seguro na borda da API quando contratos de evento continuam
-retrocompatíveis e workers permanecem estáveis.
+Canary releases are safer at the API edge when event contracts remain
+backward compatible and workers remain stable.
 
-## Entrega Progressiva
+## Progressive Delivery
 
-Entrega progressiva combina:
+Progressive delivery combines:
 
-- release canário;
+- canary releases;
 - feature flags;
-- métricas observáveis de rollout;
-- limites explícitos de rollback;
-- contratos de evento retrocompatíveis;
-- pequenos passos de deploy.
+- observable rollout metrics;
+- explicit rollback thresholds;
+- backward-compatible event contracts;
+- small deployment steps.
 
-Comportamento de pagamento normalmente deve ser protegido por feature flags ou
-allowlists antes de rollout percentual.
+Payment behavior should generally be protected by feature flags or
+allowlists before a percentage-based rollout.
 
-## Matriz de Falhas
+## Failure Matrix
 
-| Falha | Padrão |
+| Failure | Pattern |
 | --- | --- |
-| Usuário clica duas vezes no checkout | Chave de idempotência |
-| API faz commit, mas Kafka está fora | Outbox transacional |
-| Worker recebe evento duplicado | Idempotência no consumidor |
-| Gateway de pagamento dá timeout | Estado pendente de verificação |
-| Dependência temporariamente indisponível | Retry com backoff |
-| Mensagem venenosa | DLQ |
-| Nova versão da API regride | Rollback do canário |
-| Contrato de evento muda | Evolução retrocompatível de schema |
+| User clicks checkout twice | Idempotency key |
+| API commits, but Kafka is down | Transactional outbox |
+| Worker receives a duplicate event | Consumer idempotency |
+| Payment gateway times out | Pending verification state |
+| Dependency temporarily unavailable | Retry with backoff |
+| Poison message | DLQ |
+| New API version introduces a regression | Canary rollback |
+| Event contract changes | Backward-compatible schema evolution |

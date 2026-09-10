@@ -1,6 +1,6 @@
 {
   "name": "minishop_checkout_saga_conceitual",
-  "description": "Exemplo conceitual e didatico inspirado no Netflix Conductor. Este arquivo nao deve ser enviado para um servidor Conductor real sem adaptacao.",
+  "description": "Conceptual educational example inspired by Netflix Conductor. This file should not be submitted to a real Conductor server without adaptation.",
   "version": 1,
   "schemaVersion": 2,
   "ownerEmail": "architecture@minishop.local",
@@ -25,7 +25,7 @@
       "name": "criar_pedido_pendente",
       "taskReferenceName": "criar_pedido_pendente",
       "type": "SIMPLE",
-      "description": "Cria o pedido em estado pendente usando uma operacao local idempotente.",
+      "description": "Creates the order in a pending state using an idempotent local operation.",
       "inputParameters": {
         "orderId": "${workflow.input.orderId}",
         "customerId": "${workflow.input.customerId}",
@@ -41,7 +41,7 @@
       "name": "autorizar_pagamento",
       "taskReferenceName": "autorizar_pagamento",
       "type": "SIMPLE",
-      "description": "Autoriza pagamento no gateway usando uma idempotency key externa.",
+      "description": "Authorizes payment at the gateway using an external idempotency key.",
       "inputParameters": {
         "orderId": "${workflow.input.orderId}",
         "paymentMethodId": "${workflow.input.paymentMethodId}",
@@ -56,7 +56,7 @@
       "name": "decidir_resultado_pagamento",
       "taskReferenceName": "decidir_resultado_pagamento",
       "type": "SWITCH",
-      "description": "Decide se o fluxo continua, verifica o gateway ou cancela o pedido.",
+      "description": "Decides whether the flow continues, checks the gateway, or cancels the order.",
       "evaluatorType": "value-param",
       "expression": "paymentStatus",
       "inputParameters": {
@@ -68,7 +68,7 @@
             "name": "reservar_estoque",
             "taskReferenceName": "reservar_estoque",
             "type": "SIMPLE",
-            "description": "Reserva estoque de forma idempotente para o pedido.",
+            "description": "Reserves inventory idempotently for the order.",
             "inputParameters": {
               "orderId": "${workflow.input.orderId}",
               "cartId": "${workflow.input.cartId}",
@@ -82,7 +82,7 @@
             "name": "confirmar_pedido",
             "taskReferenceName": "confirmar_pedido",
             "type": "SIMPLE",
-            "description": "Confirma o pedido apos pagamento e estoque.",
+            "description": "Confirms the order after payment and inventory reservation.",
             "inputParameters": {
               "orderId": "${workflow.input.orderId}",
               "correlationId": "${workflow.input.correlationId}"
@@ -95,7 +95,7 @@
             "name": "decidir_confirmacao_pedido",
             "taskReferenceName": "decidir_confirmacao_pedido",
             "type": "SWITCH",
-            "description": "Aplica compensacao se a confirmacao do pedido falhar apos pagamento autorizado.",
+            "description": "Applies compensation if order confirmation fails after payment authorization.",
             "evaluatorType": "value-param",
             "expression": "orderConfirmationStatus",
             "inputParameters": {
@@ -107,7 +107,7 @@
                   "name": "publicar_pedido_confirmado",
                   "taskReferenceName": "publicar_pedido_confirmado",
                   "type": "SIMPLE",
-                  "description": "Publica evento de pedido confirmado via outbox.",
+                  "description": "Publishes an order confirmation event through the outbox.",
                   "inputParameters": {
                     "orderId": "${workflow.input.orderId}",
                     "eventType": "PedidoConfirmado",
@@ -123,7 +123,7 @@
                   "name": "reembolsar_pagamento",
                   "taskReferenceName": "reembolsar_pagamento",
                   "type": "SIMPLE",
-                  "description": "Compensa pagamento autorizado quando o pedido nao pode ser confirmado.",
+                  "description": "Compensates an authorized payment when the order cannot be confirmed.",
                   "inputParameters": {
                     "orderId": "${workflow.input.orderId}",
                     "paymentReference": "${autorizar_pagamento.output.paymentReference}",
@@ -137,7 +137,7 @@
                   "name": "cancelar_pedido",
                   "taskReferenceName": "cancelar_pedido",
                   "type": "SIMPLE",
-                  "description": "Cancela pedido depois da compensacao de pagamento.",
+                  "description": "Cancels the order after payment compensation.",
                   "inputParameters": {
                     "orderId": "${workflow.input.orderId}",
                     "reason": "CONFIRMAR_PEDIDO_FALHOU",
@@ -151,7 +151,7 @@
                   "name": "publicar_pedido_cancelado",
                   "taskReferenceName": "publicar_pedido_cancelado_apos_compensacao",
                   "type": "SIMPLE",
-                  "description": "Publica evento de pedido cancelado via outbox.",
+                  "description": "Publishes an order cancellation event through the outbox.",
                   "inputParameters": {
                     "orderId": "${workflow.input.orderId}",
                     "eventType": "PedidoCancelado",
@@ -168,7 +168,7 @@
                 "name": "enviar_para_DLQ",
                 "taskReferenceName": "enviar_para_DLQ_confirmacao_desconhecida",
                 "type": "SIMPLE",
-                "description": "Isola o workflow para inspecao quando a confirmacao nao tem resultado confiavel.",
+                "description": "Isolates the workflow for inspection when confirmation has no reliable outcome.",
                 "inputParameters": {
                   "orderId": "${workflow.input.orderId}",
                   "reason": "CONFIRMACAO_DESCONHECIDA",
@@ -185,7 +185,7 @@
             "name": "consultar_o_gateway_de_pagamento",
             "taskReferenceName": "consultar_o_gateway_de_pagamento",
             "type": "SIMPLE",
-            "description": "Consulta o gateway quando o resultado de pagamento ficou desconhecido.",
+            "description": "Queries the gateway when the payment outcome is unknown.",
             "inputParameters": {
               "orderId": "${workflow.input.orderId}",
               "paymentReference": "${autorizar_pagamento.output.paymentReference}",
@@ -199,7 +199,7 @@
             "name": "decidir_resultado_gateway",
             "taskReferenceName": "decidir_resultado_gateway",
             "type": "SWITCH",
-            "description": "Retoma o fluxo de acordo com a consulta ao gateway.",
+            "description": "Resumes the flow based on the gateway lookup.",
             "evaluatorType": "value-param",
             "expression": "gatewayPaymentStatus",
             "inputParameters": {
@@ -211,7 +211,7 @@
                   "name": "reservar_estoque",
                   "taskReferenceName": "reservar_estoque_apos_verificacao",
                   "type": "SIMPLE",
-                  "description": "Reserva estoque depois que o gateway confirma pagamento pendente.",
+                  "description": "Reserves inventory after the gateway confirms a pending payment.",
                   "inputParameters": {
                     "orderId": "${workflow.input.orderId}",
                     "cartId": "${workflow.input.cartId}",
@@ -225,7 +225,7 @@
                   "name": "confirmar_pedido",
                   "taskReferenceName": "confirmar_pedido_apos_verificacao",
                   "type": "SIMPLE",
-                  "description": "Confirma pedido depois da verificacao de pagamento.",
+                  "description": "Confirms the order after payment verification.",
                   "inputParameters": {
                     "orderId": "${workflow.input.orderId}",
                     "correlationId": "${workflow.input.correlationId}"
@@ -238,7 +238,7 @@
                   "name": "publicar_pedido_confirmado",
                   "taskReferenceName": "publicar_pedido_confirmado_apos_verificacao",
                   "type": "SIMPLE",
-                  "description": "Publica confirmacao apos consulta ao gateway.",
+                  "description": "Publishes confirmation after the gateway lookup.",
                   "inputParameters": {
                     "orderId": "${workflow.input.orderId}",
                     "eventType": "PedidoConfirmado",
@@ -254,7 +254,7 @@
                   "name": "cancelar_pedido",
                   "taskReferenceName": "cancelar_pedido_pagamento_cancelado",
                   "type": "SIMPLE",
-                  "description": "Cancela pedido quando o gateway informa pagamento cancelado.",
+                  "description": "Cancels the order when the gateway reports a canceled payment.",
                   "inputParameters": {
                     "orderId": "${workflow.input.orderId}",
                     "reason": "PAGAMENTO_CANCELADO",
@@ -271,7 +271,7 @@
                 "name": "enviar_para_DLQ",
                 "taskReferenceName": "enviar_para_DLQ_pagamento_desconhecido",
                 "type": "SIMPLE",
-                "description": "Encaminha pagamento sem conclusao para fila operacional.",
+                "description": "Routes an unresolved payment to the operational queue.",
                 "inputParameters": {
                   "orderId": "${workflow.input.orderId}",
                   "reason": "PAGAMENTO_DESCONHECIDO",
@@ -288,7 +288,7 @@
             "name": "cancelar_pedido",
             "taskReferenceName": "cancelar_pedido_pagamento_falhou",
             "type": "SIMPLE",
-            "description": "Cancela pedido quando a autorizacao de pagamento falha de forma conhecida.",
+            "description": "Cancels the order when payment authorization returns a known failure.",
             "inputParameters": {
               "orderId": "${workflow.input.orderId}",
               "reason": "PAGAMENTO_FALHOU",
@@ -302,7 +302,7 @@
             "name": "publicar_pedido_cancelado",
             "taskReferenceName": "publicar_pedido_cancelado_pagamento_falhou",
             "type": "SIMPLE",
-            "description": "Publica cancelamento quando o pagamento falha.",
+            "description": "Publishes cancellation when payment fails.",
             "inputParameters": {
               "orderId": "${workflow.input.orderId}",
               "eventType": "PedidoCancelado",
@@ -319,7 +319,7 @@
           "name": "enviar_para_DLQ",
           "taskReferenceName": "enviar_para_DLQ_resultado_pagamento_invalido",
           "type": "SIMPLE",
-          "description": "Isola workflows com resultado de pagamento inesperado.",
+          "description": "Isolates workflows with an unexpected payment outcome.",
           "inputParameters": {
             "orderId": "${workflow.input.orderId}",
             "reason": "RESULTADO_PAGAMENTO_INVALIDO",

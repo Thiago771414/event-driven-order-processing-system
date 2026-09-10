@@ -1,15 +1,15 @@
-# Arquitetura do Backend
+# Backend Architecture
 
-Esta arquitetura de backend é inspirada no projeto MiniShop. Ela é descrita aqui
-como um desenho educacional de system design, não como um guia de implementação
-pronto para produção.
+This backend architecture is inspired by the MiniShop project. It is presented
+here as an educational system design, not as a production-ready implementation
+guide.
 
-## Componentes
+## Components
 
 ```mermaid
 flowchart TD
   API[MiniShop API] --> PG[(PostgreSQL)]
-  API --> O[(Tabela Outbox)]
+  API --> O[(Outbox Table)]
   O --> OW[Outbox Worker]
   OW --> K[(Kafka)]
   K --> OrderW[Order Worker]
@@ -18,43 +18,43 @@ flowchart TD
   PaymentW --> Redis
   OrderW --> PG
   PaymentW --> PG
-  PaymentW --> GW[Gateway de Pagamento]
-  PaymentW --> DLQ[(Tópico DLQ)]
+  PaymentW --> GW[Payment Gateway]
+  PaymentW --> DLQ[(DLQ Topic)]
 ```
 
 ## MiniShop API
 
-A API é o limite síncrono entre a experiência de produto e o backend
-distribuído. Ela recebe requisições, valida entradas, aplica regras de domínio,
-abre transações no banco e retorna status de domínio estáveis.
+The API is the synchronous boundary between the product experience and the
+distributed backend. It receives requests, validates input, applies domain rules,
+opens database transactions, and returns stable domain statuses.
 
-A API deve:
+The API should:
 
-- validar o formato da requisição e invariantes de domínio;
-- gravar pedidos e pagamentos no PostgreSQL;
-- gravar eventos de outbox na mesma transação;
-- retornar identificadores de recurso e status atual;
-- incluir correlation IDs em logs e respostas;
-- evitar publicação direta no Kafka dentro de handlers HTTP.
+- validate the request format and domain invariants;
+- write orders and payments to PostgreSQL;
+- write outbox events in the same transaction;
+- return resource identifiers and the current status;
+- include correlation IDs in logs and responses;
+- avoid publishing directly to Kafka inside HTTP handlers.
 
 ## PostgreSQL
 
-O PostgreSQL guarda o registro durável:
+PostgreSQL stores the durable records:
 
-- pedidos;
-- pagamentos;
-- tentativas de pagamento;
-- eventos de outbox;
-- registros de deduplicação de webhooks;
-- marcadores de reconciliação.
+- orders;
+- payments;
+- payment attempts;
+- outbox events;
+- webhook deduplication records;
+- reconciliation markers.
 
-O banco é a fonte da verdade porque oferece consistência transacional e
-auditabilidade durável.
+The database is the source of truth because it provides transactional consistency
+and a durable audit trail.
 
-## Outbox Transacional
+## Transactional Outbox
 
-A outbox transacional resolve o problema clássico de confirmar uma mudança no
-banco e publicar uma mensagem de forma confiável.
+The transactional outbox solves the classic problem of committing a database
+change and reliably publishing a message.
 
 ```mermaid
 sequenceDiagram
@@ -64,24 +64,24 @@ sequenceDiagram
   participant OW as Outbox Worker
   participant K as Kafka
 
-  API->>DB: Inicia transação
-  API->>DB: Insere pedido/pagamento
-  API->>DB: Insere evento de outbox
+  API->>DB: Begin transaction
+  API->>DB: Insert order/payment
+  API->>DB: Insert outbox event
   API->>DB: Commit
-  OW->>DB: Busca eventos não publicados
-  OW->>K: Publica evento
-  OW->>DB: Marca evento como publicado
+  OW->>DB: Fetch unpublished events
+  OW->>K: Publish event
+  OW->>DB: Mark event as published
 ```
 
-Se o Kafka estiver indisponível, o registro de domínio ainda é confirmado e a
-linha da outbox continua disponível para retry.
+If Kafka is unavailable, the domain record is still committed and the outbox
+row remains available for retry.
 
 ## Kafka
 
-Kafka é a camada de comunicação para eventos de negócio já confirmados. Ele
-desacopla a API da execução posterior.
+Kafka is the communication layer for committed business events. It decouples
+the API from subsequent execution.
 
-Exemplos de tópicos:
+Example topics:
 
 - `orders.created`;
 - `orders.created.dlq`;
@@ -91,76 +91,76 @@ Exemplos de tópicos:
 - `payments.verification.dlq`;
 - `payments.reconciliation.needed`.
 
-As chaves de partição devem preservar ordenação quando o domínio exigir, como
-por `orderId` ou `paymentId`.
+Partition keys should preserve ordering when the domain requires it, such as
+by `orderId` or `paymentId`.
 
 ## Workers
 
-Workers processam eventos assincronamente. Eles devem assumir entrega pelo menos
-uma vez:
+Workers process events asynchronously. They should assume at-least-once
+delivery:
 
-- verificar idempotência antes de efeitos colaterais;
-- usar retry com backoff para falhas temporárias;
-- enviar mensagens esgotadas para DLQ;
-- atualizar PostgreSQL apenas por transições de domínio seguras;
-- emitir métricas, logs e traces.
+- check idempotency before side effects;
+- retry with backoff for temporary failures;
+- send messages to the DLQ when retries are exhausted;
+- update PostgreSQL only through safe domain transitions;
+- emit metrics, logs, and traces.
 
-Workers não são um lugar para esconder comportamento de negócio invisível. As
-decisões deles afetam estado visível para o usuário.
+Workers should not hide business behavior. Their decisions affect state visible
+to the user.
 
 ## Redis
 
-Redis apoia a aceleração do backend:
+Redis supports backend acceleration:
 
-- registros de idempotência para requisições HTTP e consumidores de eventos;
-- locks de curta duração;
-- cache de leitura quente;
-- contadores de rate limiting quando necessário;
-- dados temporários de coordenação.
+- idempotency records for HTTP requests and event consumers;
+- short-lived locks;
+- hot-read caching;
+- rate-limiting counters when needed;
+- temporary coordination data.
 
-Redis não deve substituir o PostgreSQL como sistema de registro.
+Redis should not replace PostgreSQL as the system of record.
 
-## Consistência de Pagamento
+## Payment Consistency
 
-O processamento de pagamento é modelado como um fluxo de trabalho inspirado em saga,
-porque gateways de pagamento, APIs, bancos, filas e workers não podem ser
-confirmados em uma única transação atômica.
+Payment processing is modeled as a saga-inspired workflow
+because payment gateways, APIs, databases, queues, and workers cannot all commit
+within a single atomic transaction.
 
 ```mermaid
 flowchart TD
-  A[POST /orders] --> B[Cria tentativa de pagamento]
-  B --> C{Resposta do gateway}
-  C -->|Confirmado| D[Pedido confirmado<br/>Pagamento confirmado]
-  C -->|Falhou| E[Pedido cancelado<br/>Pagamento falhou]
-  C -->|Desconhecido / timeout| F[Pagamento pendente de verificação]
+  A[POST /orders] --> B[Create payment attempt]
+  B --> C{Gateway response}
+  C -->|Confirmed| D[Order confirmed<br/>Payment confirmed]
+  C -->|Failed| E[Order canceled<br/>Payment failed]
+  C -->|Unknown / timeout| F[Payment pending verification]
   D --> G[Outbox PaymentConfirmed]
   E --> H[Outbox PaymentFailed]
   F --> I[Outbox PaymentVerificationRequested]
   I --> J[Kafka]
-  J --> K[Worker de verificação de pagamento]
-  K --> L{Consulta no gateway}
-  L -->|Confirmado| D
-  L -->|Rejeitado| E
-  L -->|Erro temporário| M[Retry com backoff]
+  J --> K[Payment verification worker]
+  K --> L{Gateway lookup}
+  L -->|Confirmed| D
+  L -->|Rejected| E
+  L -->|Temporary error| M[Retry with backoff]
   M --> K
-  M -->|Limite excedido| N[DLQ]
-  N --> O[Reconciliação]
+  M -->|Limit exceeded| N[DLQ]
+  N --> O[Reconciliation]
 ```
 
-A decisão importante é tornar estados desconhecidos explícitos. Timeout não é a
-mesma coisa que falha.
+The key decision is to make unknown states explicit. A timeout is not the same
+as a failure.
 
 ## DLQ
 
-A dead-letter queue é uma superfície controlada de falha. Ela armazena eventos
-que não puderam ser processados com segurança depois que os retries se esgotaram.
+The dead-letter queue provides a controlled way to handle failures. It stores events
+that could not be processed safely after retries were exhausted.
 
-O tratamento de DLQ deve incluir:
+DLQ handling should include:
 
-- payload do evento;
-- motivo do erro;
-- quantidade de retries;
+- event payload;
+- error reason;
+- retry count;
 - correlation ID;
-- horário da primeira falha;
-- horário da última falha;
-- caminho controlado de reprocessamento.
+- time of the first failure;
+- time of the last failure;
+- a controlled reprocessing path.
